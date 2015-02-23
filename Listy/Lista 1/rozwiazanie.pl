@@ -15,6 +15,12 @@ nie_smok(X):-mieszka(X),szczesliwy(X).
 szczesliwy(X):-zwierze(X),styka(X,Y),mily(Y).
 mily(X):-czlowiek(X),odwiedza(X).
 styka(X,Y):-zwierze(X),mieszka(X),czlowiek(Y),odwiedza(Y).
+% smok to zwierze
+
+%Zadanie 3
+man(socrates).
+mortal(X):-man(X). 
+
 %zadanie 4
 sibling(X,Y):-parent(Z,X),parent(Z,Y).
 sister(X,Y):-female(X),sibling(X,Y).
@@ -44,4 +50,64 @@ parent(eve,ivonne).
 parent(adam,anna).
 parent(eve,anna).
 
+%Zadanie 5
+%descendant(john, mark).
+%descendant(X, adam).
+%sister(X, ivonne).
+%cousin(X, Y).
 
+%Zadanie 6
+polaczenie(wroclaw,warszawa).
+polaczenie(wroclaw,krakow).
+polaczenie(wroclaw,szczecin).
+polaczenie(szczecin,lublin).
+polaczenie(szczecin,gniezno).
+polaczenie(warszawa,katowice).
+polaczenie(gniezno,gliwice).
+polaczenie(lublin,gliwice).
+polaczenie(warszawa,wroclaw).
+
+% ?- polaczenie(wroclaw,lublin).
+% false.
+
+% ?- polaczenie(wroclaw,X).
+% X = warszawa ;
+% X = krakow ;
+% X = szczecin.
+% ?- polaczenie(X,wroclaw).
+% false.
+
+% ?- polaczenie(X,Y),polaczenie(Y,gliwice).
+% X = szczecin,
+% Y = lublin ;
+% X = szczecin,
+% Y = gniezno ;
+% false.
+
+% ?- polaczenie(X,gliwice).
+% X = gniezno ;
+% X = lublin.
+% ?- polaczenie(X,Y),polaczenie(Y,gliwice).
+% X = szczecin,
+% Y = lublin ;
+% X = szczecin,
+% Y = gniezno ;
+% false.
+% ?- polaczenie(X,Y),polaczenie(Y,Z),polaczenie(Z,gliwice).
+% X = wroclaw,
+% Y = szczecin,
+% Z = lublin ;
+% X = wroclaw,
+% Y = szczecin,
+% Z = gniezno ;
+% false.
+
+% Pozostałe.
+% Jeśli dodamy do tego połączenie np. z Warszawy do Wrocławia, to gdy zapytamy
+% gdzie możemy się dostać z Wrocławia, to na liście będzie Wrocław oraz wszystko się zapętla.
+
+connection(X,Y):-
+  polaczenie(X,Y).
+  connection(X,Y):-
+    polaczenie(X,Z),
+      connection(Z,Y).
