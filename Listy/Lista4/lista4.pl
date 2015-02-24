@@ -1,5 +1,4 @@
 %Zadanie1
-length2(X,Y):-length(X,0,Y).
 length([],A,A).
 length([_|T],A,Y):-A\==Y,A1 is A+1,length(T,A1,Y).
 %Zadanie2
@@ -24,7 +23,7 @@ bin([1|Xs]):-zrob_liste(Xs),fill(Xs).
 rfill([1]).
 rfill([0|Xs]):-fill(Xs).
 rfill([1|Xs]):-fill(Xs).
-
+%trzeba coś zmodyfikować!
 rbin([0]).
 rbin(X):-zrob_liste(X),rfill(X).
 %Zadanie4
@@ -43,31 +42,18 @@ treesort([], SortedTree, SortedTree).
 treesort([H|T], SortedTree, Acc):-
   insert(Acc, H, NextAcc),
   treesort(T, SortedTree, NextAcc).
-%Zadanie6
-sublist(_,[]).
-sublist([H|T],[H|S]):-
-  sublist(T,S).
-sublist([_|T],S):-
-  sublist(T,S).
 
+%Zadanie7
+is_list2([]).
+is_list2([_|T]):-
+  is_list2(T).
 
-concat_number(Digits, Num):-
-  concat_number(Digits, 0, Num).
-concat_number([], Res, Res).
-concat_number([H|T], Acc, Res):-
-  NextAcc is (Acc * 10) + H,
-  concat_number(T, NextAcc, Res).
-
-%?- length(_L, 7),
-%  sublist([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], _L),
-%  permutation([_A, _C, _E, _P, _R, _S, _U], _L),
-%  _U \= 0,
-%  _P \= 0,
-%  concat_number([_U, _S, _A], USA),
-%  concat_number([_U, _S, _S, _R], USSR),
-%  concat_number([_P, _E, _A, _C, _E], PEACE),
-%  PEACE is USA + USSR.
-%
-%  Zadanie7
-
-
+rev(X,Y):-
+  rev(X,[],Y).
+rev([],A,A).
+rev([H|T],A,Y):-
+  is_list2(H), !,
+  rev(H, R),
+  rev(T,[R|A],Y).
+rev([H|T],A,Y):-
+  rev(T,[H|A],Y).
