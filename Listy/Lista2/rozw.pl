@@ -20,10 +20,10 @@ tail(T,[H|T]).
 init(T,L):-reverse(L,X),tail(T,X).
 prefix(P,L):-append(P,X,L).
 sufix(S,L):-append(X,S,L).
-%Zadanie 6 -> tylko na odwrot sa podane zmienne
+%Zadanie 6 
 sublist([],[_]).
 sublist([H|T],[H|D]):-sublist(T,D).
-sublist([H|T],[E|D]):-sublist([H|T],D).
+sublist(T,[_|D]):-sublist(T,D).
 %Zadanie 7
 perm([],[]).
-perm(L,[H|T]):-select(H,L,LT),perm(LT,PT).
+perm(L,[H|T]):-select(H,L,LT),perm(LT,T).
