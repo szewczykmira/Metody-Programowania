@@ -3,8 +3,8 @@ perm([],[]).
 perm([H|T],P):-perm(T,X),select(H,P,X).
 %Zadanie 2
 filter([],_).
-filter([H|T],[H|S]):-H>=0,perm(T,[H|S]).
-filter([H|T],S):-H<0,perm(T,S).
+filter([H|T],[H|S]):-H>=0,filter(T,S).
+filter([H|T],S):-H<0,filter(T,S).
 %
 count(_,[],0).
 count(X,[X|T],Y):-count(X,T,Y1),!, Y is Y1+1.
