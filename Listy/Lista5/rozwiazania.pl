@@ -1,4 +1,8 @@
 %Zadanie 1
+apn(List, Apn):- apn(List, Apn, []).
+apn([], Apn, Apn).
+apn([H|T], Apn, N) :- append(N,H, Nn), apn(T, Apn, Nn).
+%Zadanie 2
 flatten(List, Flat):- flatten(List, Flat, []).
 flatten([], Flat, Flat).
 flatten([H|T],[H|F],Acc):- atomic(H),!,flatten(T,F,Acc).
