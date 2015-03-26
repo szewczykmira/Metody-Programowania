@@ -24,6 +24,14 @@ merge_sort([],[]).
 merge_sort([X],[X]).
 merge_sort(List,Result):-halve(List, Left, Right), merge_sort(Left,ResLeft),merge_sort(Right, ResRight), merge(ResLeft,ResRight,Result).
 
+%Zadanie 6
+scal([],[]).
+scal([X],[X]).
+scal([H,G|T],[W|O]):-merge(H,G,W), scal(T,O).
+m_sort([],[]).
+m_sort([X],X).
+m_sort(List,Result):-scal(List,Siema), m_sort(Siema,Result).
+
 %Zadanie 7
 split([],_,[],[]):-!.
 split([E|List],Med,Small,[E|Big]):- E>=Med,!, split(List, Med, Small, Big).
