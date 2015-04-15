@@ -1,0 +1,26 @@
+Zadanie 1
+
+<cyfra>  := 0|1|2|3|4|5|6|7|8|9
+<litera> := a|b|...|z
+<liczba> := <cyfra>|<cyfra><liczba>
+<napis>  := <litera><napis>|<litera>
+<atom>   := <cyfra> | <litera> | <napis> | <liczba>
+
+
+<op1>    := < | <= | = | <> | >= | > | in
+<op2>    := + | - | or
+<op3>    := / | div | mod | and
+<op4>    := not
+
+<w>     := <atom> | <w1>
+<w1>    := <w2> | <w1><op1><w2>
+<w2>    := <w3> | <w2><op2><w3> | -<w3> | -<w2><op2><w3>
+<w3>    := <w4> | <w3><op3><w4>
+<w4>    := <w> | <op4><w>
+
+Drzewa:
+  Drzewo wyprowadzenia: 
+  i >= 0                   
+ /      \
+i        0
+
