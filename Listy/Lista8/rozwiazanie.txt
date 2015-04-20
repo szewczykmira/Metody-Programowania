@@ -32,3 +32,15 @@ Zadanie 3:
 L = flip (curry f) a b = curry f b a = f (b,a)
 P = curry (f.swap) a b = (f.swap) (a,b) = f (swap (a,b))
 czyli: f (b,a) = f (swap (a,b)) =? swap (a,b) = (b,a)
+
+
+Zadanie 4:
+
+Na razie nie ;P
+
+Zadanie 5:
+
+cross(f,g).cross(h,k) x = cross (f,g) (cross(h,k) x) = cross(f,g) pair(h.fst(x), k.snd(x)) =
+pair(f.fst, g.snd) pair (h (fst x), k (snd x)) = 
+pair(f.fst, g.snd) (h(fst x), k(snd x)) = pair (f.h(fst x), g.k(snd x)) =
+(f.h.fst x, g.k.snd x) = pair (f.h.fst, g.k.snd) x = cross (f.h, g.k) x  CNU...
