@@ -28,3 +28,7 @@ simple_expression(AST, Num, [lewy|X], Y):-
 TBA...
 
 Zadanie 3:
+
+L = flip (curry f) a b = curry f b a = f (b,a)
+P = curry (f.swap) a b = (f.swap) (a,b) = f (swap (a,b))
+czyli: f (b,a) = f (swap (a,b)) =? swap (a,b) = (b,a)
