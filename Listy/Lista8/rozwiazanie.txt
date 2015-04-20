@@ -1,0 +1,30 @@
+Zadanie 1:
+
+tree(leaf) --> "*",!.
+tree(node(A,B)) --> "(", tree(A), tree(B), ")".
+
+Generuje wszystkie słowa należące do języka. Tutaj już jest poprawiony :)
+
+
+Zadanie 2:
+
+expression(AST, Num, X, Y):-
+  simple_expression(AST, Num, X, Y),
+  !.
+expression(star(LeftAST, RightAST), Num, X, Y):-
+  length(X, Len),
+  Num =< Len,
+  Xum is Num +1,
+  expression(LeftAST, Xum, X, Z),
+  Z=[x|T],
+  simple_expression(RightAST, Xum, T, Y).
+
+simple_expression(a, Num, [a|X], X):- !.
+simple_expression(b, Num, [b|X], X):- !.
+simple_expression(AST, Num, [lewy|X], Y):-
+  expression(AST, Num, X, Z),
+  Z=[prawy|Y].
+
+TBA...
+
+Zadanie 3:
