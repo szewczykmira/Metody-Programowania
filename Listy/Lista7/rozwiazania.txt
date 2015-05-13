@@ -24,3 +24,6 @@ Drzewa:
  /      \
 i        0
 
+Zadanie 2
+
+<cyfra>
