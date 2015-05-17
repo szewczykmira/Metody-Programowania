@@ -16,6 +16,10 @@ instance Monoid Int where
   (***) = (+)
   e = 0
 
+instance Monoid Integer where
+  (***) x y = x*y `mod` 9876543210
+  e = 1
+
 data Mtx2x2 a = Mtx2x2 a a a a deriving Show
 instance Num a => Monoid (Mtx2x2 a) where
   (***) = mnozenie_macierzy
