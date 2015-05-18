@@ -8,13 +8,14 @@ infixr 7 ^^^
 a^^^(n)
   | n < 0            = error "Exponent below 0"
   | n == 0           = e
-  | n `mod` 2 == 0   = a^^^half***a^^^half
-  | n `mod` 2 == 1   = a***a^^^half***a^^^half
-    where half = n `div` 2
+  | n `mod` 2 == 0   = half***half
+  | n `mod` 2 == 1   = a***half***half
+    where half = a^^^(n `div` 2)
+-- 5323470030
 
-instance Monoid Int where
-  (***) = (+)
-  e = 0
+--instance Monoid Int where
+--  (***) = (+)
+--  e = 0
 
 instance Monoid Integer where
   (***) x y = x*y `mod` 9876543210
