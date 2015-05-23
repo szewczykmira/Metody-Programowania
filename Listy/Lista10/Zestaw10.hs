@@ -44,4 +44,3 @@ msortn xs n = merge ((msortn xs half), msortn (drop half xs) (n - half))
     where half = n `div` 2
 
 msort1 xs = msortn xs (length xs)
-
