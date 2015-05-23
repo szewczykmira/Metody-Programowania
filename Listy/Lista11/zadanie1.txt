@@ -1,0 +1,26 @@
+Lemat:
+scanr f a = map (foldr f a) . tails
+
+foldr _ c = c
+foldr (X) (x:xs) = x (X) foldr (X) xs
+
+1) Dla x:xs = []
+
+scanr f a [] = a
+map (foldr f a).tails [] = map (foldr f a) (tails []) =
+  map (foldr f a) [[]] = foldr f a [] : [] =
+  z definicji foldra => a
+
+2) Dla x:xs
+
+Załóżmy, że dla każdej listy krótszej od x:xs lemat jest prawdziwy.
+
+map (foldr f a).tails (x:xs) =
+  map (foldr f a) (tails (x:xs)) = 
+  map (foldr f a) ((x:xs) : tails (xs)) = 
+  (foldr f a (x:xs) ) : map (foldr f a) (tails xs) =
+  (foldr f a (x:xs)) : map (foldr f a).tails xs =
+  z lematu =
+  (foldr f a (x:xs)) : scanr f a xs =
+  scanr f a (x:xs) 
+ CNU 
