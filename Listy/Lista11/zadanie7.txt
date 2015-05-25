@@ -6,5 +6,5 @@ length [loop, loop, loop]       => (I) kończy się
 length ones                     => (III) rozbiega się
 sum ones                        => (III) rozbiega się
 last ones                       => (II) pętli się w nieskończoność
-last [1..]                      => (II) pętli się w nieskończoność
+last [1..]                      => (III) rozbiega się
 let f [] = 0; f (_:xs) = 2 + f xs in f ones => rozbiega się
