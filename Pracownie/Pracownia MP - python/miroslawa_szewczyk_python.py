@@ -15,6 +15,31 @@ class Pen:
                 (self.last()[0] + horizontal,
                 self.last()[1] + vertical))
 
+    def header(self, max_x, max_y):
+        return  """%IPS-Adobe-2.0 EPSF-2.0
+%%BoundingBox: -1 -1 {0} {1}
+newpath
+0.0 0.0 moveto""".format(max_x, max_y)
+
+    def footer(self):
+        return """.4 setlinewidth
+stroke
+showpage
+%%Trailer
+%EOF"""
+
+    def print_path_to_postscript(self):
+        xs = [x[0] for x in self.path]
+        ys = [x[1] for x in self.path]
+        max_xs = max(xs)
+        max_ys = max(ys)
+        print(self.header(max_xs + 1, max_ys + 1))
+        for p in self.path:
+            x, y = p
+            print(float(x), float(y), "lineto")
+        print(self.footer())
+
+
 class Direction:
     def __init__(self):
         self.x = 0
@@ -28,6 +53,7 @@ class Direction:
     def right(self):
         return self
 
+
 class Up(Direction):
     def to_coord(self):
         return (0,1)
@@ -37,6 +63,7 @@ class Up(Direction):
 
     def right(self):
         return Right()
+
 
 class Down(Direction):
     def to_coord(self):
@@ -48,6 +75,7 @@ class Down(Direction):
     def right(self):
         return Left()
 
+
 class Left(Direction):
     def to_coord(self):
         return (-1,0)
@@ -58,6 +86,7 @@ class Left(Direction):
     def right(self):
         return Up()
 
+
 class Right(Direction):
     def to_coord(self):
         return (1,0)
@@ -67,6 +96,7 @@ class Right(Direction):
 
     def right(self):
         return Down()
+
 
 class Tortoise:
     def __init__(self):
@@ -87,6 +117,7 @@ class Tortoise:
             self.rotate_left()
         else:
             self.rotate_right()
+
 
 class HillbertFractal:
     def __init__(self):
@@ -118,32 +149,7 @@ class HillbertFractal:
     def path(self):
         return self.tortoise.pen.path
 
-def header(max_x, max_y):
-    return  """%IPS-Adobe-2.0 EPSF-2.0
-%%BoundingBox: -1 -1 {0} {1}
-newpath
-0.0 0.0 moveto""".format(max_x, max_y)
 
-def footer():
-    return """.4 setlinewidth
-stroke
-showpage
-%%Trailer
-%EOF"""
 
-def print_path_to_postscript(path):
-    max_x = 0
-    max_y = 0
-    for p in path:
-        x, y = p
-        if x > max_x:
-            max_x = x
-        if y > max_y:
-            max_y = y
-    print(header(max_x + 1, max_y + 1))
-    for p in path:
-        x, y = p
-        print(float(x), float(y), "lineto")
-    print(footer())
 
-print_path_to_postscript(HillbertFractal().draw(7).path())
+HillbertFractal().draw(4).tortoise.pen.print_path_to_postscript()
