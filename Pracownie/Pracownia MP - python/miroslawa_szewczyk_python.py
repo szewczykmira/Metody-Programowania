@@ -6,14 +6,23 @@ class Pen:
         self.unit = unit
         # self.scalable_unit = 1. / (pow(2,self.n) - 1)
         self.path = [(0,0)]
+        self.path3d = [(0,0,0)]
 
     def last(self):
         return self.path[-1]
+    
+    def last3d(self):
+        return self.path3d[-1]
 
     def move(self, horizontal, vertical):
         return self.path.append(
                 (self.last()[0] + horizontal,
                 self.last()[1] + vertical))
+
+    def move3d(self,x,y,z):
+        return self.path3d.append((self.last3d[0] + x,
+            self.last3d[1] + y,
+            self.last3d[2] + z))
 
     def header(self, max_x, max_y):
         return  """%IPS-Adobe-2.0 EPSF-2.0
