@@ -239,4 +239,4 @@ class HillbertFractal:
         # draw n-1
         return self
 
-print(HillbertFractal().drawn(1).path)
+print(HillbertFractal().drawn(1).path())
