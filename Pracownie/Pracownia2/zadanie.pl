@@ -14,16 +14,22 @@ neg(A, ~A).
 convert([],[]).
 convert([H|T], [(H, axiom) | Z]) :- convert(T, Z).
 
+remove(A,A,[]).
+remove(A, A v B, B).
+remove(A, B v A, B):-!.
+remove(A, B v C, B v D) :- remove(A, C, D).
+
+getFirst([],_):-fail,!.
+getFirst(A v _, A):-!.
+getFirst(A,A).
+
+c([], _,[]):-!.
+c(B, C, [F|D]):-getFirst(B,A), neg(A,E), find(E, C), remove(E, C, F), remove(A,B, H), c(H, C, D).
 
 
-% Temporary unneeded
-numerize([],_, []).
-numerize([H|T], A, [B|C]) :- B = (H, A),A1 is A +1, numerize(T, A1, C).
+%iterate(_, [], _, _, _).
+%iterate((A,B),[(C,_)|T],IndexA, IndexH, Result):- compare(A, C, E), F=(E,(IndexA,IndexH)), append(Result, F, R1), Ind is IndexH + 1, iterate((A,B), T, IndexA, Ind, R1).
 
-for(_, [], []):-!.
-for(A, [H|T], [X|Y]) :- X = (A, H), for(A, T, Y).
+%f([],_, _, _):-!.
+%f([H|T], Index, Spoil, Result) :- iterate(H, Spoil, Index, 1, R), Index1 is Index + 1,append(Spoil, [H], Spoil1), append(Result, R, Result1), f(T, Index1, Spoil1, Result1).
 
-forfor(A,B) :- for2(A, [], [], B).
-
-for2([], _, B, B).
-for2([H|T],Z,A, _) :- for(H, Z, B), append(Z,[H],Y), append(A, B, C), for2(T, Y, C, _).
