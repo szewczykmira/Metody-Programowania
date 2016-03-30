@@ -23,9 +23,9 @@ getFirst([],_):-fail,!.
 getFirst(A v _, A):-!.
 getFirst(A,A).
 
-c([], _,[]):-!.
+c([], _,[]).
 c(B, C, [F|D]):-getFirst(B,A), neg(A,E), find(E, C), remove(E, C, F), remove(A,B, H), c(H, C, D).
-
+c(B, C, D):-getFirst(B,A), remove(A,B,H), c(H,C,D).
 
 %iterate(_, [], _, _, _).
 %iterate((A,B),[(C,_)|T],IndexA, IndexH, Result):- compare(A, C, E), F=(E,(IndexA,IndexH)), append(Result, F, R1), Ind is IndexH + 1, iterate((A,B), T, IndexA, Ind, R1).
