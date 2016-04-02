@@ -41,7 +41,7 @@ parse([H|T], IndA, IndB, [(H, (IndA, IndB))|Z]):-parse(T, IndA, IndB, Z).
 % Check element with every previous
 iterate([], _, _, _,[]):-!.
 iterate(_, [], _, _, []):-!.
-iterate((A,B),[(C,_)|T],IndexA, IndexH, R1):- c(A, C, E), parse(E,IndexA,IndexH, F), append(Result, F, R1), Ind is IndexH + 1, iterate((A,B), T, IndexA, Ind, Result).
+iterate((A,B),[(C,_)|T],IndexA, IndexH, R1):- c(A, C, E), parse(E,IndexA,IndexH, F), append(Result, F, R1), Ind is IndexH + 1, iterate((A,B), T, IndexA, Ind, Result),!.
 
 %f([],_, _, _):-!.
 %f([H|T], Index, Spoil, Result) :- iterate(H, Spoil, Index, 1, R), Index1 is Index + 1,append(Spoil, [H], Spoil1), append(Result, R, Result1), f(T, Index1, Spoil1, Result1).
