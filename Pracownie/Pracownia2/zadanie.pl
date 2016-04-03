@@ -53,8 +53,9 @@ noDup(_, [], []):-!.
 noDup(A, [(H, I, J)|T], [(H,I,J)|Z]):- \+member((H,_,_),A),!, noDup(A,T,Z).
 noDup(A, [_|T], Z):-noDup(A, T, Z).
 
-f([],_, _, X, X):-!.
-f([H|_], Index, Spoil, Result, A) :- iterate(H, Spoil, Index, 1, R), member(([], _, _), R),!, noDup(Result, R,RZ), append(Result, RZ, Result1), f([], Index, Spoil, Result1, A).
+f([],0, 0, X, X):-!.
+f([], _, _, _, _,):-fail.
+f([H|_], Index, Spoil, Result, A) :- iterate(H, Spoil, Index, 1, R), member(([], _, _), R),!, noDup(Result, R,RZ), append(Result, RZ, Result1), f([], 0, 0, Result1, A).
 f([H|T], Index, Spoil, Result, A) :- iterate(H, Spoil, Index, 1, R), Index1 is Index + 1, append(Spoil, [H], S1),noDup(Result,R,RZ) ,append(Result, RZ, Result1), append(T,RZ,T1), f(T1, Index1, S1, Result1, A).
 
 prove(X, Y):- convert(X,A),!, f(A, 1, [], A, Y).
