@@ -1,5 +1,3 @@
-:-op(200, fx, ~).
-:-op(500, xfy, v).
 % Check if second element contains first element
 find(X, X):-!.
 find(X, X v _):-!.
