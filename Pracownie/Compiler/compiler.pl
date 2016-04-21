@@ -50,7 +50,9 @@ add_op --> "-".
 % number(D, N) --> digits(Ds), { number_chars(N, [D|Ds]) }.
 digit --> [D], {code_type(D,digit)}.
 digits --> digit.
-digits --> digits, digit.
+digits --> digit, digits.
+% foo(X, Y) :- digit(X, Y).
+% foo(X, Y) :- foo(X, Z), digit(Z, Y).
 number --> digits.
 
 % letters and words
