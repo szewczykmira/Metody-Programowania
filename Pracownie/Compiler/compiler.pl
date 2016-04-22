@@ -51,8 +51,6 @@ add_op --> "-".
 digit --> [D], {code_type(D,digit)}.
 digits --> digit.
 digits --> digit, digits.
-% foo(X, Y) :- digit(X, Y).
-% foo(X, Y) :- foo(X, Z), digit(Z, Y).
 number --> digits.
 
 % letters and words
@@ -75,7 +73,7 @@ identifier --> letter, ident.
 % variable(L,Id) --> identifier(L,Id).
 variable --> identifier.
 variables --> variable.
-variables --> variables, ",", variable.
+variables --> variables,!, ",", variable.
 
 % formal argument
 formal_arg --> variable.
@@ -102,9 +100,21 @@ test_phrase(String, Pred) :- atom_codes(String, Codes), phrase(Pred, Codes).
 test_identifier([]) :- test_phrase("a111", identifier).
 test_identifier(["a111 not parsed by identifer"]).
 
+test_digit([]) :- test_phrase("9", digit).
+test_digit(["9 not parsed by digit"]).
+
+test_digits([]) :- test_phrase("987", digits).
+test_digits(["987 not parsed by digits"]).
+
+test_variable([]) :- test_phrase("a112", variable).
+test_variable(["a112 not parsed by variable"]).
+
+test_variables([]) :- test_phrase("a112", variables), test_phrase("a112,aa", variables).
+test_variables(["a112 or a112,aa not parsed by variables"]).
+
 test_all([]).
 test_all([H | T]) :- call(H, E), (E = [] ; print(E)), test_all(T).
 
 :- test_all([
-  test_identifier
+  test_identifier, test_digit, test_digits, test_variable, test_variables
 ]).
