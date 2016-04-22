@@ -8,6 +8,7 @@
 % procedura --> "procedure" nazwa_procedury "(" argumenty_formalne ")" blok
 % argumenty_formalne --> puste | ciąg_argumentow_formalnych
 % ciąg_argumentów_formalnych --> argument_formalny | ciąg_argumentów_formalnych "," argument_formalny
+
 % instrukcja_zlozona --> instrukcja | instrukcja_zlozona ";" instrukcja
 % instrukcja --> zmiena ":=" wyrazenie_arytmetyczne | "if" wyrazenie_logiczne "then" instrukcja_zlozona "fi" | "if" wyrazenie_logiczne "then" instrukcja_zlozona "else" instrukcja_zlozona "fi" | "while" wyrazenie_logiczne "do" instrukcja_zlozona "done" | "call" wywolanie_procedury | "return" wyrazenie_arytmetyczne | "read" zmienna | "write" wyrazenie_arytmetyczne
 % wyrazenie_arytmetyczne --> skladnik | wyrazenie_arytmetyczne operator_addytywny skladnik
@@ -19,6 +20,7 @@
 % argumenty_faktyczne --> puste | ciag_argumentow_faktycznych
 % ciag_argumentow_faktycznych --> argument_faktyczny | ciag_argumentow_faktycznych "," argument_faktyczny
 % argument_faktyczny --> wyrazenie_arytmetyczne
+
 % wyrazenie_logiczne --> koniunkcja | wyrazenie_logiczne "or" koniunkcja
 % koniunkcja --> warunek | koniunkcja "and" warunek
 % warunek --> wyrazenie_relacyjne | "not" wyrazenie_relacyjne
@@ -112,9 +114,15 @@ test_variable(["a112 not parsed by variable"]).
 test_variables([]) :- test_phrase("a112", variables), test_phrase("a112,aa", variables).
 test_variables(["a112 or a112,aa not parsed by variables"]).
 
+test_formal_arg([]) :- test_phrase("a112", formal_arg), test_phrase("valuea112", formal_arg).
+test_formal_arg(["a112 or valuea112 not parsed by formal_arg"]).
+
+test_proc_name([]) :- test_phrase("a112", proc_name).
+test_proc_name(["a112 not parsed by proc_name"]).
+
 test_all([]).
 test_all([H | T]) :- call(H, E), (E = [] ; print(E)), test_all(T).
 
 :- test_all([
-  test_identifier, test_digit, test_digits, test_variable, test_variables
+  test_identifier, test_digit, test_digits, test_variable, test_variables, test_formal_arg, test_proc_name
 ]).
