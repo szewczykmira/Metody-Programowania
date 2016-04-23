@@ -5,8 +5,6 @@
 % slowa kluczowe
 % program --> "program" identyfikator blok
 % blok --> deklaracje "begin" instrukcja_zlozona "end"
-% procedura --> "procedure" nazwa_procedury "(" argumenty_formalne ")" blok
-% argumenty_formalne --> puste | ciąg_argumentow_formalnych
 
 % instrukcja_zlozona --> instrukcja | instrukcja_zlozona ";" instrukcja
 % instrukcja --> zmiena ":=" wyrazenie_arytmetyczne | "if" wyrazenie_logiczne "then" instrukcja_zlozona "fi" | "if" wyrazenie_logiczne "then" instrukcja_zlozona "else" instrukcja_zlozona "fi" | "while" wyrazenie_logiczne "do" instrukcja_zlozona "done" | "call" wywolanie_procedury | "return" wyrazenie_arytmetyczne | "read" zmienna | "write" wyrazenie_arytmetyczne
@@ -18,7 +16,6 @@
 % wywolanie_procedury --> nazwa_procedury "(" argumenty_faktyczne ")"
 % argumenty_faktyczne --> puste | ciag_argumentow_faktycznych
 % ciag_argumentow_faktycznych --> argument_faktyczny | ciag_argumentow_faktycznych "," argument_faktyczny
-% argument_faktyczny --> wyrazenie_arytmetyczne
 
 % wyrazenie_logiczne --> koniunkcja | wyrazenie_logiczne "or" koniunkcja
 % koniunkcja --> warunek | koniunkcja "and" warunek
@@ -84,8 +81,18 @@ formal_arg --> variable.
 formal_arg_str --> formal_arg,",",formal_arg_str.
 formal_arg_str --> formal_arg.
 
+% formal arguments
+formal_args --> [].
+formal_args --> formal_arg_str.
+
+% argument_faktyczny --> wyrazenie_arytmetyczne
+real_arg --> arithmetic_expr.
+
 % procedure name
 proc_name --> identifier.
+
+% procedure
+procedure --> "procedure", proc_name, "(", formal_args, ")", block.
 
 % declarator
 declarator --> "local", variables.
@@ -100,38 +107,68 @@ declarations --> declarations, declaration.
 
 
 % Testing
-test_phrase(String, Pred) :- atom_codes(String, Codes), phrase(Pred, Codes).
+test_phrase(String, Pred) :- 
+  atom_codes(String, Codes), phrase(Pred, Codes).
 
-test_identifier([]) :- test_phrase("a111", identifier).
+test_identifier([]) :- 
+  test_phrase("a111", identifier).
 test_identifier(["a111 not parsed by identifer"]).
 
-test_digit([]) :- test_phrase("9", digit).
+test_digit([]) :- 
+  test_phrase("9", digit).
 test_digit(["9 not parsed by digit"]).
 
-test_digits([]) :- test_phrase("987", digits).
+test_digits([]) :- 
+  test_phrase("987", digits).
 test_digits(["987 not parsed by digits"]).
 
-test_variable([]) :- test_phrase("a112", variable).
+test_variable([]) :- 
+  test_phrase("a112", variable).
 test_variable(["a112 not parsed by variable"]).
 
-test_variables([]) :- test_phrase("a112", variables), test_phrase("a112,aa", variables).
+test_variables([]) :- 
+  test_phrase("a112", variables), 
+  test_phrase("a112,aa", variables).
 test_variables(["a112 or a112,aa not parsed by variables"]).
 
-test_formal_arg([]) :- test_phrase("a112", formal_arg), test_phrase("valuea112", formal_arg).
+test_formal_arg([]) :- 
+  test_phrase("a112", formal_arg), 
+  test_phrase("valuea112", formal_arg).
 test_formal_arg(["a112 or valuea112 not parsed by formal_arg"]).
 
-test_formal_arg_str() :- test_phrase("aqwer", formal_arg_str), test_phrase("awer,wet3", formal_arg_str), test_phrase("awe,valuewe2", formal_arg_str).
+test_formal_arg_str([]) :- 
+  test_phrase("aqwer", formal_arg_str), 
+  test_phrase("awer,wet3", formal_arg_str), 
+  test_phrase("awe,valuewe2", formal_arg_str).
 test_formal_arg_str(["aqwer, <<awer,wet3>> and <<awe,valuewe2>> not parsed by formal_arg_str"]).
 
-test_proc_name([]) :- test_phrase("a112", proc_name).
+test_formal_args([]) :- 
+  test_phrase("",formal_args),
+  test_phrase("awe,valuewe2", formal_args).
+test_formal_args(["empty and awe,valuewe2 not parsed by formal_args"]).
+
+test_proc_name([]) :- 
+  test_phrase("a112", proc_name).
 test_proc_name(["a112 not parsed by proc_name"]).
 
-test_declarator([]) :- test_phrase("locala112", declarator).
+test_declarator([]) :- 
+  test_phrase("locala112", declarator).
 test_declarator(["locala112 not parsed by delarator"]).
 
 test_all([]).
-test_all([H | T]) :- call(H, E), (E = [] ; print(E)), test_all(T).
+test_all([H | T]) :- 
+  call(H, E), (E = [] ; print(E)), 
+  test_all(T).
 
 :- test_all([
-  test_identifier, test_digit, test_digits, test_variable, test_variables, test_formal_arg, test_proc_name, test_declarator, test_formal_arg_str
+  test_identifier,
+  test_digit,
+  test_digits,
+  test_variable,
+  test_variables,
+  test_formal_arg,
+  test_proc_name,
+  test_declarator,
+  test_formal_arg_str,
+  test_formal_args
 ]).
