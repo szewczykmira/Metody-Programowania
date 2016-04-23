@@ -11,11 +11,6 @@
 % wyrazenie_arytmetyczne --> skladnik | wyrazenie_arytmetyczne operator_addytywny skladnik
 % skladnik --> czynnik | skladnik operator_multiplikatywny czynnik
 % czynnik --> wyrazenie_proste | "-" wyrazenie_proste
-% wyrazenie_proste --> wyrazenie_atomowe | "(" wyrazenie_arytmetyczne ")"
-% wyrazenie_atomowe --> zmienna | wywolanie_procedury | literal_calkowitoliczbowy
-% wywolanie_procedury --> nazwa_procedury "(" argumenty_faktyczne ")"
-% argumenty_faktyczne --> puste | ciag_argumentow_faktycznych
-% ciag_argumentow_faktycznych --> argument_faktyczny | ciag_argumentow_faktycznych "," argument_faktyczny
 
 % wyrazenie_logiczne --> koniunkcja | wyrazenie_logiczne "or" koniunkcja
 % koniunkcja --> warunek | koniunkcja "and" warunek
@@ -85,14 +80,34 @@ formal_arg_str --> formal_arg.
 formal_args --> [].
 formal_args --> formal_arg_str.
 
-% argument_faktyczny --> wyrazenie_arytmetyczne
+% real argument
 real_arg --> arithmetic_expr.
+
+% real arguments string
+real_args_str --> real_arg, ",", real_args_str.
+real_args_str --> real_arg.
+
+% real arguments
+real_args --> real_args_str.
+real_args --> [].
 
 % procedure name
 proc_name --> identifier.
 
 % procedure
 procedure --> "procedure", proc_name, "(", formal_args, ")", block.
+
+% procedure call
+procedure_call --> proc_name, "(", real_args, ")".
+
+% atom expression
+atom_expr --> procedure_call.
+atom_expr --> variable.
+atom_expr --> number.
+
+% simple expression
+simple_expr --> "(", arithmetic_expr, ")".
+simple_expr --> atom_expr.
 
 % declarator
 declarator --> "local", variables.
