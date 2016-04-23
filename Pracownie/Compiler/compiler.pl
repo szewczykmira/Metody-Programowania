@@ -8,9 +8,6 @@
 
 % instrukcja_zlozona --> instrukcja | instrukcja_zlozona ";" instrukcja
 % instrukcja --> zmiena ":=" wyrazenie_arytmetyczne | "if" wyrazenie_logiczne "then" instrukcja_zlozona "fi" | "if" wyrazenie_logiczne "then" instrukcja_zlozona "else" instrukcja_zlozona "fi" | "while" wyrazenie_logiczne "do" instrukcja_zlozona "done" | "call" wywolanie_procedury | "return" wyrazenie_arytmetyczne | "read" zmienna | "write" wyrazenie_arytmetyczne
-% wyrazenie_arytmetyczne --> skladnik | wyrazenie_arytmetyczne operator_addytywny skladnik
-% skladnik --> czynnik | skladnik operator_multiplikatywny czynnik
-% czynnik --> wyrazenie_proste | "-" wyrazenie_proste
 
 % wyrazenie_logiczne --> koniunkcja | wyrazenie_logiczne "or" koniunkcja
 % koniunkcja --> warunek | koniunkcja "and" warunek
@@ -79,7 +76,7 @@ formal_arg_str --> formal_arg.
 % formal arguments
 formal_args --> [].
 formal_args --> formal_arg_str.
-
+% TODO: Test from here
 % real argument
 real_arg --> arithmetic_expr.
 
@@ -109,6 +106,19 @@ atom_expr --> number.
 simple_expr --> "(", arithmetic_expr, ")".
 simple_expr --> atom_expr.
 
+% factor (czynnik)
+factor --> "-", simple_expr.
+factor --> simple_expr.
+
+% indigrient (skladnik)
+indigrient --> indigrient, mul_op, factor.
+indigrient --> factor.
+
+% wyrazenie_arytmetyczne --> skladnik | wyrazenie_arytmetyczne operator_addytywny skladnik
+% arithmetic expression
+arithmetic_expr --> arithmetic_expr, add_op, indigrient.
+arithmetic_expr --> indigrient.
+
 % declarator
 declarator --> "local", variables.
 
@@ -120,7 +130,7 @@ declaration --> procedure.
 declarations --> [].
 declarations --> declarations, declaration.
 
-
+% Until here!
 % Testing
 test_phrase(String, Pred) :- 
   atom_codes(String, Codes), phrase(Pred, Codes).
