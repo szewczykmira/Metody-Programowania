@@ -122,12 +122,12 @@ rel_expr --> "(", logical_expr, ")".
 rel_expr --> arithmetic_expr, rel_op, arithmetic_expr.
 
 % clause (warunek)
-clause --> "not", rel_expr.
-clause --> rel_expr.
+condition --> "not", rel_expr.
+condition --> rel_expr.
 
 % conjunction
-conjunction --> clause, "and", conjunction.
-conjunction --> clause.
+conjunction --> codition, "and", conjunction.
+conjunction --> condition.
 
 % logical expression
 logical_expr --> conjunction, "or", logical_expr.
