@@ -7,7 +7,6 @@
 % blok --> deklaracje "begin" instrukcja_zlozona "end"
 
 % instrukcja_zlozona --> instrukcja | instrukcja_zlozona ";" instrukcja
-% instrukcja --> zmiena ":=" wyrazenie_arytmetyczne | "if" wyrazenie_logiczne "then" instrukcja_zlozona "fi" | "if" wyrazenie_logiczne "then" instrukcja_zlozona "else" instrukcja_zlozona "fi" | "while" wyrazenie_logiczne "do" instrukcja_zlozona "done" | "call" wywolanie_procedury | "return" wyrazenie_arytmetyczne | "read" zmienna | "write" wyrazenie_arytmetyczne
 
 % wyrazenie_logiczne --> koniunkcja | wyrazenie_logiczne "or" koniunkcja
 % koniunkcja --> warunek | koniunkcja "and" warunek
@@ -118,6 +117,17 @@ indigrient --> factor.
 % arithmetic expression
 arithmetic_expr --> arithmetic_expr, add_op, indigrient.
 arithmetic_expr --> indigrient.
+
+% instuction
+instuction --> "write", arithmetic_expr.
+instuction --> "read", variable.
+instuction --> "return", arithmetic_expr.
+instuction --> "call", procedure_call.
+instuction --> "while", logical_expr, "do", compound_instuction, "done".
+instuction --> "if", logical_expr, "then", compound_instuction, "else", compound_instuction, "fi".
+instuction --> "if", logical_expr, "then", compound_instuction, "fi".
+instuction --> variable, ":=", arithmetic_expr.
+
 
 % declarator
 declarator --> "local", variables.
