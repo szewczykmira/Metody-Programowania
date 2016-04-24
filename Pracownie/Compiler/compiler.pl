@@ -48,7 +48,7 @@ identifier --> letter, ident.
 % variable(L,Id) --> identifier(L,Id).
 variable --> identifier.
 variables --> variable.
-variables --> variables,!, ",", variable.
+variables --> variable,!, ",", variables.
 
 % formal argument
 formal_arg --> "value", variable.
@@ -142,7 +142,7 @@ declaration --> procedure.
 
 % declarations
 declarations --> [].
-declarations --> declarations, declaration.
+declarations --> declaration, declarations.
 
 % block
 block --> declarations, "begin", compound_instruction, "end".
@@ -275,6 +275,26 @@ test_logical_expr([]) :-
   test_phrase("not45<>5and45>6ornot5>4", logical_expr).
 test_logical_expr(["not45<>5and45>6ornot5>4 not parsed by logical_expr"]).
 
+test_declaration([]) :-
+  test_phrase("localw23,aaa,e", declaration).
+test_declaration(["localw23,aaa,e not parsed by declaration"]).
+
+test_declarations([]) :-
+  test_phrase("localwe,aaa,e", declarations).
+test_declarations(["C not parsed by declarations"]).
+
+test_block([]) :-
+  test_phrase("localw23,aaa,ebbeginwrite3*4end",block).
+test_block(["XYX not parsed by block"]).
+
+test_procedure([]) :-
+  test_phrase("procedureqwer(awe,valuewe)localw23,aaa,ebeginwrite3*4end",procedure).
+test_procedure(["X not parsed by procedure"]).
+
+test_program([]) :-
+  test_phrase("programqwerlocalw23,aaa,ebeginwrite3*4end", program).
+test_program(["X not parsed by program"]).
+
 test_all([]).
 test_all([H | T]) :- 
   call(H, E), (E = [] ; print(E)), 
@@ -305,5 +325,10 @@ test_all([H | T]) :-
   test_rel_expr,
   test_condition,
   test_conjunction,
-  test_logical_expr
+  test_logical_expr,
+  test_declaration,
+  test_block,
+  test_declarations,
+  test_procedure,
+  test_program
 ]).
