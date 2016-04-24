@@ -103,19 +103,19 @@ indigrient --> factor.
 arithmetic_expr --> indigrient, add_op, arithmetic_expr.
 arithmetic_expr --> indigrient.
 
-% instuction
-instuction --> "write", arithmetic_expr.
-instuction --> "read", variable.
-instuction --> "return", arithmetic_expr.
-instuction --> "call", procedure_call.
-instuction --> "while", logical_expr, "do", compound_instruction, "done".
-instuction --> "if", logical_expr, "then", compound_instruction, "else", compound_instruction, "fi".
-instuction --> "if", logical_expr, "then", compound_instruction, "fi".
-instuction --> variable, ":=", arithmetic_expr.
+% instruction
+instruction --> "write", arithmetic_expr.
+instruction --> "read", variable.
+instruction --> "return", arithmetic_expr.
+instruction --> "call", procedure_call.
+instruction --> "while", logical_expr, "do", compound_instruction, "done".
+instruction --> "if", logical_expr, "then", compound_instruction, "else", compound_instruction, "fi".
+instruction --> "if", logical_expr, "then", compound_instruction, "fi".
+instruction --> variable, ":=", arithmetic_expr.
 
 % compound instruction
-compound_instruction --> instuction,";",compound_instruction.
-compound_instruction --> instuction.
+compound_instruction --> instruction,";",compound_instruction.
+compound_instruction --> instruction.
 
 % relational expression
 rel_expr --> "(", logical_expr, ")".
@@ -126,7 +126,7 @@ condition --> "not", rel_expr.
 condition --> rel_expr.
 
 % conjunction
-conjunction --> codition, "and", conjunction.
+conjunction --> condition, "and", conjunction.
 conjunction --> condition.
 
 % logical expression
@@ -238,6 +238,43 @@ test_real_args([]) :-
   test_phrase("-45*4,45,56+6", real_args),
   test_phrase("", real_args).
 test_real_args(["-45*4,45,56+6 or empty not parsed by real_args"]).
+
+test_procedure_call([]) :-
+  test_phrase("ea23(45,5*6)", procedure_call).
+test_procedure_call(["ea23(45,5*6) not parsed by procedure_call"]).
+
+test_instruction([]) :-
+  test_phrase("write45*5*6", instruction),
+  test_phrase("readb45", instruction),
+  test_phrase("return45*5*6", instruction),
+  test_phrase("callea23(45,5*6)", instruction),
+  test_phrase("whilenot45>5doreadr4done", instruction),
+  test_phrase("ifnot34>4thenreadr4elsewrite3*4fi", instruction),
+  test_phrase("ifnot34>4thenreadr4fi", instruction),
+  test_phrase("awe:=3*4", instruction).
+test_instruction(["<<write45*5*6>> or <<readb45>> or <<return45*5*6>> or ... not parsed by instruction"]).
+
+test_compound_instruction([]) :-
+  test_phrase("callea23(45,5*6);write45", compound_instruction).
+
+test_rel_expr([]) :-
+  test_phrase("45*5<>5", rel_expr),
+  test_phrase("(not45<>5and45>6or45<>7)", rel_expr).
+test_rel_expr(["45*5<>5 not parsed by rel_expr"]).
+
+test_condition([]) :-
+  test_phrase("45*5<>5", condition),
+  test_phrase("not45<>5", condition).
+test_condition(["45*5<>5 or not45<>5 not parsed by condition"]).
+
+test_conjunction([]) :-
+  test_phrase("not45<>5and45>6", conjunction).
+test_conjunction(["not45<>5and45>6 not parsed by conjunction"]).
+
+test_logical_expr([]) :-
+  test_phrase("not45<>5and45>6ornot5>4", logical_expr).
+test_logical_expr(["not45<>5and45>6ornot5>4 not parsed by logical_expr"]).
+
 test_all([]).
 test_all([H | T]) :- 
   call(H, E), (E = [] ; print(E)), 
@@ -261,5 +298,12 @@ test_all([H | T]) :-
   test_arithmetic_expr,
   test_real_arg,
   test_real_args_str,
-  test_real_args
+  test_real_args,
+  test_procedure_call,
+  test_instruction,
+  test_compound_instruction,
+  test_rel_expr,
+  test_condition,
+  test_conjunction,
+  test_logical_expr
 ]).
