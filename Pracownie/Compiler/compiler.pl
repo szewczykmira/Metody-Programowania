@@ -61,7 +61,7 @@ formal_arg_str --> formal_arg.
 % formal arguments
 formal_args --> [].
 formal_args --> formal_arg_str.
-% TODO: Test from here
+
 % real argument
 real_arg --> arithmetic_expr.
 
@@ -96,11 +96,11 @@ factor --> "-", simple_expr.
 factor --> simple_expr.
 
 % indigrient (skladnik)
-indigrient --> indigrient, mul_op, factor.
+indigrient --> factor, mul_op, indigrient.
 indigrient --> factor.
 
 % arithmetic expression
-arithmetic_expr --> arithmetic_expr, add_op, indigrient.
+arithmetic_expr --> indigrient, add_op, arithmetic_expr.
 arithmetic_expr --> indigrient.
 
 % instuction
@@ -200,6 +200,44 @@ test_declarator([]) :-
   test_phrase("locala112", declarator).
 test_declarator(["locala112 not parsed by delarator"]).
 
+test_atom_expr([]) :- 
+  test_phrase("45", atom_expr),
+  test_phrase("a45", atom_expr).
+test_atom_expr(["45 and a45 not parsed by atom expression"]).
+
+test_simple_expr([]) :-
+  test_phrase("a45", simple_expr),
+  test_phrase("(-45*4+5)", simple_expr).
+test_simple_expr(["a45 or (-45*4+5) not parsed by simple expression"]).
+
+test_factor([]) :-
+  test_phrase("a45", factor),
+  test_phrase("-45", factor).
+test_factor(["a45 or -45 not parsed by factor"]).
+
+test_indigirient([]) :-
+  test_phrase("-45", indigrient),
+  test_phrase("-45div4", indigrient).
+test_indigirient(["-45 or -45div4 not parsed by indigrient"]).
+
+test_arithmetic_expr([]) :-
+  test_phrase("-45*4", arithmetic_expr),
+  test_phrase("-45*4+5", arithmetic_expr).
+test_arithmetic_expr(["-45*4 or -45*4+5 not parsed by arithmetic_expr"]).
+
+test_real_arg([]) :-
+  test_phrase("-45*4+5", real_arg).
+test_real_arg(["-45*4+5 not parsed by real_arg"]).
+
+test_real_args_str([]) :-
+  test_phrase("-45*4+5,45,56+6", real_args_str),
+  test_phrase("-45*4+6", real_args_str).
+test_real_args_str(["-45*4+5,45,56+6 or -45*4+6 not parsed by real_args_str"]).
+
+test_real_args([]) :-
+  test_phrase("-45*4,45,56+6", real_args),
+  test_phrase("", real_args).
+test_real_args(["-45*4,45,56+6 or empty not parsed by real_args"]).
 test_all([]).
 test_all([H | T]) :- 
   call(H, E), (E = [] ; print(E)), 
@@ -215,5 +253,13 @@ test_all([H | T]) :-
   test_proc_name,
   test_declarator,
   test_formal_arg_str,
-  test_formal_args
+  test_formal_args,
+  test_atom_expr,
+  test_simple_expr,
+  test_factor,
+  test_indigirient,
+  test_arithmetic_expr,
+  test_real_arg,
+  test_real_args_str,
+  test_real_args
 ]).
