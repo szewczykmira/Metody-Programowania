@@ -1,20 +1,6 @@
 % vim: syntax=prolog
 % first of all we need to define parser for algol16
 
-% symbole przystankowe
-% slowa kluczowe
-% program --> "program" identyfikator blok
-% blok --> deklaracje "begin" instrukcja_zlozona "end"
-
-% instrukcja_zlozona --> instrukcja | instrukcja_zlozona ";" instrukcja
-
-% wyrazenie_logiczne --> koniunkcja | wyrazenie_logiczne "or" koniunkcja
-% koniunkcja --> warunek | koniunkcja "and" warunek
-% warunek --> wyrazenie_relacyjne | "not" wyrazenie_relacyjne
-% wyrazenie_relacyjne --> wyrazenie_arytmetyczne operator_relacyjny wyrazenie_arytmetyczne | "(" wyrazenie_logiczne ")"
-
-
-
 % relational operators
 rel_op --> "<".
 rel_op --> "<=".
@@ -113,7 +99,6 @@ factor --> simple_expr.
 indigrient --> indigrient, mul_op, factor.
 indigrient --> factor.
 
-% wyrazenie_arytmetyczne --> skladnik | wyrazenie_arytmetyczne operator_addytywny skladnik
 % arithmetic expression
 arithmetic_expr --> arithmetic_expr, add_op, indigrient.
 arithmetic_expr --> indigrient.
@@ -123,11 +108,30 @@ instuction --> "write", arithmetic_expr.
 instuction --> "read", variable.
 instuction --> "return", arithmetic_expr.
 instuction --> "call", procedure_call.
-instuction --> "while", logical_expr, "do", compound_instuction, "done".
-instuction --> "if", logical_expr, "then", compound_instuction, "else", compound_instuction, "fi".
-instuction --> "if", logical_expr, "then", compound_instuction, "fi".
+instuction --> "while", logical_expr, "do", compound_instruction, "done".
+instuction --> "if", logical_expr, "then", compound_instruction, "else", compound_instruction, "fi".
+instuction --> "if", logical_expr, "then", compound_instruction, "fi".
 instuction --> variable, ":=", arithmetic_expr.
 
+% compound instruction
+compound_instruction --> instuction,";",compound_instruction.
+compound_instruction --> instuction.
+
+% relational expression
+rel_expr --> "(", logical_expr, ")".
+rel_expr --> arithmetic_expr, rel_op, arithmetic_expr.
+
+% clause (warunek)
+clause --> "not", rel_expr.
+clause --> rel_expr.
+
+% conjunction
+conjunction --> clause, "and", conjunction.
+conjunction --> clause.
+
+% logical expression
+logical_expr --> conjunction, "or", logical_expr.
+logical_expr --> conjunction.
 
 % declarator
 declarator --> "local", variables.
@@ -139,6 +143,12 @@ declaration --> procedure.
 % declarations
 declarations --> [].
 declarations --> declarations, declaration.
+
+% block
+block --> declarations, "begin", compound_instruction, "end".
+
+% program
+program --> "program", identifier, block.
 
 % Until here!
 % Testing
