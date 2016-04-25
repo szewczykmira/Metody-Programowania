@@ -5,6 +5,8 @@
 white --> [C], {code_type(C, space) },!, white.
 white --> [].
 white_space --> [C], {code_type(C,space)},white.
+white_or_blank --> white_space.
+white_or_blank --> [].
 
 % relational operators
 rel_op --> "<".
@@ -53,11 +55,11 @@ identifier --> letter, ident.
 % variable
 % variable(L,Id) --> identifier(L,Id).
 variable --> identifier.
-variables --> variable, ",", white_space, !, variables.
+variables --> variable, white_or_blank, ",", white_space, !, variables.
 variables --> variable.
 
 % formal argument
-formal_arg --> "value", variable.
+formal_arg --> "value", white_space, !, variable.
 formal_arg --> variable.
 
 % string of formal arguments
@@ -184,7 +186,7 @@ test_variables(["a112 or a112,aa not parsed by variables"]).
 
 test_formal_arg([]) :- 
   test_phrase("a112", formal_arg), 
-  test_phrase("valuea112", formal_arg).
+  test_phrase("value a112", formal_arg).
 test_formal_arg(["a112 or valuea112 not parsed by formal_arg"]).
 
 test_formal_arg_str([]) :- 
@@ -311,30 +313,30 @@ test_all([H | T]) :-
   test_digit,
   test_digits,
   test_variable,
-  test_variables
-  %test_formal_arg,
-  %test_proc_name,
-  %test_declarator,
-  %test_formal_arg_str,
-  %test_formal_args,
-  %test_atom_expr,
-  %test_simple_expr,
-  %test_factor,
-  %test_indigirient,
-  %test_arithmetic_expr,
-  %test_real_arg,
-  %test_real_args_str,
-  %test_real_args,
-  %test_procedure_call,
-  %test_instruction,
-  %test_compound_instruction,
-  %test_rel_expr,
-  %test_condition,
-  %test_conjunction,
-  %test_logical_expr,
-  %test_declaration,
-  %test_block,
-  %test_declarations,
-  %test_procedure,
-  %test_program
+  test_variables,
+  test_formal_arg
+  %,test_proc_name
+  %,,test_declarator
+  %,test_formal_arg_str
+  %,test_formal_args
+  %,test_atom_expr
+  %,test_simple_expr
+  %,test_factor
+  %,test_indigirient
+  %,test_arithmetic_expr
+  %,test_real_arg
+  %,test_real_args_str
+  %,test_real_args
+  %,test_procedure_call
+  %,test_instruction
+  %,test_compound_instruction
+  %,test_rel_expr
+  %,test_condition
+  %,test_conjunction
+  %,test_logical_expr
+  %,test_declaration
+  %,test_block
+  %,test_declarations
+  %,test_procedure
+  %,test_program
 ]).
