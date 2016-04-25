@@ -2,8 +2,9 @@
 % first of all we need to define parser for algol16
 
 % white spaces
-white_space --> [C], {code_type(C, space) },!, white_space.
-white_space --> [].
+white --> [C], {code_type(C, space) },!, white.
+white --> [].
+white_space --> [C], {code_type(C,space)},white.
 
 % relational operators
 rel_op --> "<".
