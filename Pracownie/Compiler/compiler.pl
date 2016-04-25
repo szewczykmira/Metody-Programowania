@@ -44,17 +44,17 @@ letter --> [L], {code_type(L, alpha)}.
 % identifier(L, Id) --> ident(As),{atom_codes(Id, [L|As])}.
 special_char --> "_".
 special_char --> "'".
-ident --> letter, ident.
-ident --> special_char, ident.
-ident --> digit, ident.
+ident --> letter, !, ident.
+ident --> special_char, !, ident.
+ident --> digit, !, ident.
 ident --> [].
 identifier --> letter, ident.
 
 % variable
 % variable(L,Id) --> identifier(L,Id).
 variable --> identifier.
+variables --> variable, ",", white_space, !, variables.
 variables --> variable.
-variables --> variable,!, ",", variables.
 
 % formal argument
 formal_arg --> "value", variable.
@@ -179,7 +179,7 @@ test_variable(["a112 not parsed by variable"]).
 
 test_variables([]) :- 
   test_phrase("a112", variables), 
-  test_phrase("a112,aa", variables).
+  test_phrase("a112, aa", variables).
 test_variables(["a112 or a112,aa not parsed by variables"]).
 
 test_formal_arg([]) :- 
@@ -311,30 +311,30 @@ test_all([H | T]) :-
   test_digit,
   test_digits,
   test_variable,
-  test_variables,
-  test_formal_arg,
-  test_proc_name,
-  test_declarator,
-  test_formal_arg_str,
-  test_formal_args,
-  test_atom_expr,
-  test_simple_expr,
-  test_factor,
-  test_indigirient,
-  test_arithmetic_expr,
-  test_real_arg,
-  test_real_args_str,
-  test_real_args,
-  test_procedure_call,
-  test_instruction,
-  test_compound_instruction,
-  test_rel_expr,
-  test_condition,
-  test_conjunction,
-  test_logical_expr,
-  test_declaration,
-  test_block,
-  test_declarations,
-  test_procedure,
-  test_program
+  test_variables
+  %test_formal_arg,
+  %test_proc_name,
+  %test_declarator,
+  %test_formal_arg_str,
+  %test_formal_args,
+  %test_atom_expr,
+  %test_simple_expr,
+  %test_factor,
+  %test_indigirient,
+  %test_arithmetic_expr,
+  %test_real_arg,
+  %test_real_args_str,
+  %test_real_args,
+  %test_procedure_call,
+  %test_instruction,
+  %test_compound_instruction,
+  %test_rel_expr,
+  %test_condition,
+  %test_conjunction,
+  %test_logical_expr,
+  %test_declaration,
+  %test_block,
+  %test_declarations,
+  %test_procedure,
+  %test_program
 ]).
