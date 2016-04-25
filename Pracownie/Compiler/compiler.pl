@@ -63,12 +63,12 @@ formal_arg --> "value", white_space, !, variable.
 formal_arg --> variable.
 
 % string of formal arguments
-formal_arg_str --> formal_arg,",",formal_arg_str.
+formal_arg_str --> formal_arg, white_or_blank, ",", white_space, !, formal_arg_str.
 formal_arg_str --> formal_arg.
 
 % formal arguments
+formal_args --> formal_arg_str,!.
 formal_args --> [].
-formal_args --> formal_arg_str.
 
 % real argument
 real_arg --> arithmetic_expr.
@@ -191,13 +191,13 @@ test_formal_arg(["a112 or valuea112 not parsed by formal_arg"]).
 
 test_formal_arg_str([]) :- 
   test_phrase("aqwer", formal_arg_str), 
-  test_phrase("awer,wet3", formal_arg_str), 
-  test_phrase("awe,valuewe2", formal_arg_str).
+  test_phrase("awer, wet3", formal_arg_str), 
+  test_phrase("awe, valuewe2", formal_arg_str).
 test_formal_arg_str(["aqwer, <<awer,wet3>> and <<awe,valuewe2>> not parsed by formal_arg_str"]).
 
 test_formal_args([]) :- 
   test_phrase("",formal_args),
-  test_phrase("awe,valuewe2", formal_args).
+  test_phrase("awe, value we2", formal_args).
 test_formal_args(["empty and awe,valuewe2 not parsed by formal_args"]).
 
 test_proc_name([]) :- 
@@ -309,16 +309,16 @@ test_all([H | T]) :-
   test_all(T).
 
 :- test_all([
-  test_identifier,
-  test_digit,
-  test_digits,
-  test_variable,
-  test_variables,
-  test_formal_arg
+  test_identifier
+  ,test_identifier
+  ,test_digits
+  ,test_variable
+  ,test_variables
+  ,test_formal_arg
   %,test_proc_name
   %,,test_declarator
-  %,test_formal_arg_str
-  %,test_formal_args
+  ,test_formal_arg_str
+  ,test_formal_args
   %,test_atom_expr
   %,test_simple_expr
   %,test_factor
