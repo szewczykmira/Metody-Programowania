@@ -86,7 +86,7 @@ proc_name --> identifier.
 
 % TO TEST!
 % procedure
-procedure --> "procedure", proc_name, "(", formal_args, ")", block.
+procedure --> "procedure", white_space, proc_name, "(", white_or_blank, formal_args, white_or_blank, ")", white_space, block.
 
 % procedure call
 procedure_call --> proc_name, "(", white_or_blank, real_args, white_or_blank, ")".
@@ -112,13 +112,12 @@ indigrient --> factor.
 arithmetic_expr --> indigrient, white_or_blank, add_op, white_or_blank, !,  arithmetic_expr.
 arithmetic_expr --> indigrient.
 
-% TODO - from while!
 % instruction
 instruction --> "write", !, white_space, arithmetic_expr.
 instruction --> "read", !, white_space,  variable.
 instruction --> "return", !, white_space, arithmetic_expr.
 instruction --> "call", !, white_space, procedure_call.
-instruction --> "while", white_space,  logical_expr, white_space, "do", white_space, compound_instruction, white_space, "done".
+instruction --> "while", !, white_space,  logical_expr, white_space, "do", white_space, compound_instruction, white_space, "done".
 instruction --> "if", white_space, logical_expr, white_space, "then", white_space, compound_instruction, white_space, "else", !, white_space, compound_instruction, white_space, "fi".
 instruction --> "if", !, white_space, logical_expr, white_space, "then", white_space, compound_instruction, white_space, "fi".
 instruction --> variable, white_or_blank, ":=", white_or_blank, arithmetic_expr.
@@ -127,17 +126,14 @@ instruction --> variable, white_or_blank, ":=", white_or_blank, arithmetic_expr.
 compound_instruction --> instruction, white_or_blank, ";", white_space, !, compound_instruction.
 compound_instruction --> instruction.
 
-% TODO LOGICAL EXPRESSION!
 % relational expression
-%rel_expr --> "(", !, white_or_blank, logical_expr,white_or_blank, ")".
+rel_expr --> "(", !, white_or_blank, logical_expr,white_or_blank, ")".
 rel_expr --> arithmetic_expr, white_or_blank, rel_op, white_or_blank, arithmetic_expr.
 
-% TO TEST beacuse logical expressions
 % condition (warunek)
 condition --> "not", white_space, !, rel_expr.
 condition --> rel_expr.
 
-% TO TEST for logical expression
 % conjunction
 conjunction --> condition, white_space, "and", !, white_space, conjunction.
 conjunction --> condition.
@@ -147,23 +143,24 @@ logical_expr --> conjunction, white_space, "or", !, white_space, logical_expr.
 logical_expr --> conjunction.
 
 % declarator
-declarator --> "local", variables.
+declarator --> "local", white_space, variables.
 
 % declaration
 declaration --> declarator.
 declaration --> procedure.
 
 % declarations
+declarations_acc --> declaration, white_space, declarations_acc.
+declarations_acc --> declaration.
+declarations --> declarations_acc, !.
 declarations --> [].
-declarations --> declaration, declarations.
 
 % block
-block --> declarations, "begin", compound_instruction, "end".
+block --> declarations, white_space, "begin", white_space, compound_instruction, white_space, "end".
 
 % program
-program --> "program", identifier, block.
+program --> "program", white_space, identifier, white_space, block.
 
-% Until here!
 % Testing
 test_phrase(String, Pred) :- 
   atom_codes(String, Codes), phrase(Pred, Codes).
@@ -210,7 +207,7 @@ test_proc_name([]) :-
 test_proc_name(["a112 not parsed by proc_name"]).
 
 test_declarator([]) :- 
-  test_phrase("locala112", declarator).
+  test_phrase("local a112", declarator).
 test_declarator(["locala112 not parsed by delarator"]).
 
 test_atom_expr([]) :- 
@@ -271,8 +268,8 @@ test_compound_instruction([]) :-
   test_phrase("call ea23(45, 5*6); write 45", compound_instruction).
 
 test_rel_expr([]) :-
-  test_phrase("45*5<> 5", rel_expr).
-  %test_phrase("(not 45 <> 5and45 > 6or45<> 7)", rel_expr).
+  test_phrase("45*5 <> 5", rel_expr),
+  test_phrase("(not 45 <> 5 and 45 > 6 or 45<> 7)", rel_expr).
 test_rel_expr(["45*5<>5 not parsed by rel_expr"]).
 
 test_condition([]) :-
@@ -289,23 +286,23 @@ test_logical_expr([]) :-
 test_logical_expr(["not45<>5and45>6ornot5>4 not parsed by logical_expr"]).
 
 test_declaration([]) :-
-  test_phrase("localw23,aaa,e", declaration).
+  test_phrase("local w23, aaa, e", declaration).
 test_declaration(["localw23,aaa,e not parsed by declaration"]).
 
 test_declarations([]) :-
-  test_phrase("localwe,aaa,e", declarations).
+  test_phrase("local we, aaa, e", declarations).
 test_declarations(["C not parsed by declarations"]).
 
 test_block([]) :-
-  test_phrase("localw23,aaa,ebbeginwrite3*4end",block).
+  test_phrase("local qwe, awe begin write 3*4 end",block).
 test_block(["XYX not parsed by block"]).
 
 test_procedure([]) :-
-  test_phrase("procedureqwer(awe,valuewe)localw23,aaa,ebeginwrite3*4end",procedure).
+  test_phrase("procedure qwer( awe, valuewe) local w23, aaa, e begin write 3*4 end",procedure).
 test_procedure(["X not parsed by procedure"]).
 
 test_program([]) :-
-  test_phrase("programqwerlocalw23,aaa,ebeginwrite3*4end", program).
+  test_phrase("program qwer local w23, aaa, e begin write 3*4 end", program).
 test_program(["X not parsed by program"]).
 
 test_all([]).
@@ -321,7 +318,7 @@ test_all([H | T]) :-
   ,test_variables
   ,test_formal_arg
   ,test_proc_name
-  %,test_declarator
+  ,test_declarator
   ,test_formal_arg_str
   ,test_formal_args
   ,test_atom_expr
@@ -339,9 +336,9 @@ test_all([H | T]) :-
   ,test_condition
   ,test_conjunction
   ,test_logical_expr
-  %,test_declaration
-  %,test_block
-  %,test_declarations
-  %,test_procedure
-  %,test_program
+  ,test_declaration
+  ,test_block
+  ,test_declarations
+  ,test_procedure
+  ,test_program
 ]).
