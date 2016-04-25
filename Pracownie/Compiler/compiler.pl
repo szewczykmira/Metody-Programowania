@@ -9,21 +9,21 @@ white_or_blank --> white_space, !.
 white_or_blank --> [].
 
 % relational operators
-rel_op --> "<".
-rel_op --> "<=".
-rel_op --> ">".
-rel_op --> ">=".
+rel_op --> "<=",!.
+rel_op --> ">=",!.
+rel_op --> "<>",!.
+rel_op --> "<",!.
+rel_op --> ">",!.
 rel_op --> "=".
-rel_op --> "<>".
 
 % multiplikative operators
-mul_op --> "*".
-mul_op --> "div".
-mul_op --> "mod".
+mul_op --> "*",!.
+mul_op --> "div",!.
+mul_op --> "mod",!.
 
 % additive operators
-add_op --> "+".
-add_op --> "-".
+add_op --> "+",!.
+add_op --> "-",!.
 
 % digits and numbers
 % digit(D) --> [D], {code_type(D, digit)}.
@@ -129,7 +129,7 @@ compound_instruction --> instruction.
 
 % TODO LOGICAL EXPRESSION!
 % relational expression
-rel_expr --> "(", logical_expr, ")".
+%rel_expr --> "(", !, white_or_blank, logical_expr,white_or_blank, ")".
 rel_expr --> arithmetic_expr, white_or_blank, rel_op, white_or_blank, arithmetic_expr.
 
 % TO TEST beacuse logical expressions
@@ -137,12 +137,13 @@ rel_expr --> arithmetic_expr, white_or_blank, rel_op, white_or_blank, arithmetic
 condition --> "not", white_space, !, rel_expr.
 condition --> rel_expr.
 
+% TO TEST for logical expression
 % conjunction
 conjunction --> condition, white_space, "and", !, white_space, conjunction.
 conjunction --> condition.
 
 % logical expression
-logical_expr --> conjunction, "or", logical_expr.
+logical_expr --> conjunction, white_space, "or", !, white_space, logical_expr.
 logical_expr --> conjunction.
 
 % declarator
@@ -284,7 +285,7 @@ test_conjunction([]) :-
 test_conjunction(["not45<>5and45>6 not parsed by conjunction"]).
 
 test_logical_expr([]) :-
-  test_phrase("not45<>5and45>6ornot5>4", logical_expr).
+  test_phrase("not 45 <>5 and 45> 6 or not 5 > 4", logical_expr).
 test_logical_expr(["not45<>5and45>6ornot5>4 not parsed by logical_expr"]).
 
 test_declaration([]) :-
@@ -320,7 +321,7 @@ test_all([H | T]) :-
   ,test_variables
   ,test_formal_arg
   ,test_proc_name
-  %,,test_declarator
+  %,test_declarator
   ,test_formal_arg_str
   ,test_formal_args
   ,test_atom_expr
@@ -337,7 +338,7 @@ test_all([H | T]) :-
   ,test_rel_expr
   ,test_condition
   ,test_conjunction
-  %,test_logical_expr
+  ,test_logical_expr
   %,test_declaration
   %,test_block
   %,test_declarations
