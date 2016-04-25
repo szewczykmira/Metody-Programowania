@@ -5,7 +5,7 @@
 white --> [C], {code_type(C, space) },!, white.
 white --> [].
 white_space --> [C], {code_type(C,space)},white.
-white_or_blank --> white_space.
+white_or_blank --> white_space, !.
 white_or_blank --> [].
 
 % relational operators
@@ -73,14 +73,12 @@ formal_args --> [].
 % real argument
 real_arg --> arithmetic_expr.
 
-% TO TEST!
 % real arguments string
-real_args_str --> real_arg, ",", real_args_str.
+real_args_str --> real_arg, white_or_blank, ",", white_space, !, real_args_str.
 real_args_str --> real_arg.
 
-% TO TEST!
 % real arguments
-real_args --> real_args_str.
+real_args --> real_args_str, !.
 real_args --> [].
 
 % procedure name
@@ -90,14 +88,13 @@ proc_name --> identifier.
 % procedure
 procedure --> "procedure", proc_name, "(", formal_args, ")", block.
 
-% TO TEST!
 % procedure call
-procedure_call --> proc_name, "(", real_args, ")".
+procedure_call --> proc_name, "(", white_or_blank, real_args, white_or_blank, ")".
 
 % atom expression
 atom_expr --> procedure_call, !.
 atom_expr --> variable, !.
-atom_expr --> number, !.
+atom_expr --> number.
 
 % simple expression
 simple_expr --> "(", white_or_blank,  arithmetic_expr, white_or_blank, ")", !.
@@ -115,30 +112,33 @@ indigrient --> factor.
 arithmetic_expr --> indigrient, white_or_blank, add_op, white_or_blank, !,  arithmetic_expr.
 arithmetic_expr --> indigrient.
 
+% TODO - from while!
 % instruction
-instruction --> "write", arithmetic_expr.
-instruction --> "read", variable.
-instruction --> "return", arithmetic_expr.
-instruction --> "call", procedure_call.
-instruction --> "while", logical_expr, "do", compound_instruction, "done".
-instruction --> "if", logical_expr, "then", compound_instruction, "else", compound_instruction, "fi".
-instruction --> "if", logical_expr, "then", compound_instruction, "fi".
-instruction --> variable, ":=", arithmetic_expr.
+instruction --> "write", !, white_space, arithmetic_expr.
+instruction --> "read", !, white_space,  variable.
+instruction --> "return", !, white_space, arithmetic_expr.
+instruction --> "call", !, white_space, procedure_call.
+instruction --> "while", white_space,  logical_expr, white_space, "do", white_space, compound_instruction, white_space, "done".
+instruction --> "if", white_space, logical_expr, white_space, "then", white_space, compound_instruction, white_space, "else", !, white_space, compound_instruction, white_space, "fi".
+instruction --> "if", !, white_space, logical_expr, white_space, "then", white_space, compound_instruction, white_space, "fi".
+instruction --> variable, white_or_blank, ":=", white_or_blank, arithmetic_expr.
 
 % compound instruction
-compound_instruction --> instruction,";",compound_instruction.
+compound_instruction --> instruction, white_or_blank, ";", white_space, !, compound_instruction.
 compound_instruction --> instruction.
 
+% TODO LOGICAL EXPRESSION!
 % relational expression
 rel_expr --> "(", logical_expr, ")".
-rel_expr --> arithmetic_expr, rel_op, arithmetic_expr.
+rel_expr --> arithmetic_expr, white_or_blank, rel_op, white_or_blank, arithmetic_expr.
 
-% clause (warunek)
-condition --> "not", rel_expr.
+% TO TEST beacuse logical expressions
+% condition (warunek)
+condition --> "not", white_space, !, rel_expr.
 condition --> rel_expr.
 
 % conjunction
-conjunction --> condition, "and", conjunction.
+conjunction --> condition, white_space, "and", !, white_space, conjunction.
 conjunction --> condition.
 
 % logical expression
@@ -242,45 +242,45 @@ test_real_arg([]) :-
 test_real_arg(["-45*4+5 not parsed by real_arg"]).
 
 test_real_args_str([]) :-
-  test_phrase("-45*4+5,45,56+6", real_args_str),
-  test_phrase("-45*4+6", real_args_str).
+  test_phrase("-45*4+5, 45, 56+6", real_args_str),
+  test_phrase("-45 *4 + 6", real_args_str).
 test_real_args_str(["-45*4+5,45,56+6 or -45*4+6 not parsed by real_args_str"]).
 
 test_real_args([]) :-
-  test_phrase("-45*4,45,56+6", real_args),
+  test_phrase("-45*4, 45, 56+6", real_args),
   test_phrase("", real_args).
 test_real_args(["-45*4,45,56+6 or empty not parsed by real_args"]).
 
 test_procedure_call([]) :-
-  test_phrase("ea23(45,5*6)", procedure_call).
+  test_phrase("ea23( 45, 5*6)", procedure_call).
 test_procedure_call(["ea23(45,5*6) not parsed by procedure_call"]).
 
 test_instruction([]) :-
-  test_phrase("write45*5*6", instruction),
-  test_phrase("readb45", instruction),
-  test_phrase("return45*5*6", instruction),
-  test_phrase("callea23(45,5*6)", instruction),
-  test_phrase("whilenot45>5doreadr4done", instruction),
-  test_phrase("ifnot34>4thenreadr4elsewrite3*4fi", instruction),
-  test_phrase("ifnot34>4thenreadr4fi", instruction),
-  test_phrase("awe:=3*4", instruction).
+  test_phrase("write 45 * 5* 6", instruction),
+  test_phrase("read b45", instruction),
+  test_phrase("return 45* 5*6", instruction),
+  test_phrase("call a23( 45, 5*6)", instruction),
+  test_phrase("while not45>5 do read r4 done", instruction),
+  test_phrase("if not34>4 then read r4 else write 3* 4 fi", instruction),
+  test_phrase("if not 34>4 then read r4 fi", instruction),
+  test_phrase("awe := 3*4", instruction).
 test_instruction(["<<write45*5*6>> or <<readb45>> or <<return45*5*6>> or ... not parsed by instruction"]).
 
 test_compound_instruction([]) :-
-  test_phrase("callea23(45,5*6);write45", compound_instruction).
+  test_phrase("call ea23(45, 5*6); write 45", compound_instruction).
 
 test_rel_expr([]) :-
-  test_phrase("45*5<>5", rel_expr),
-  test_phrase("(not45<>5and45>6or45<>7)", rel_expr).
+  test_phrase("45*5<> 5", rel_expr).
+  %test_phrase("(not 45 <> 5and45 > 6or45<> 7)", rel_expr).
 test_rel_expr(["45*5<>5 not parsed by rel_expr"]).
 
 test_condition([]) :-
-  test_phrase("45*5<>5", condition),
-  test_phrase("not45<>5", condition).
+  test_phrase("45* 5 <> 5", condition),
+  test_phrase("not 45 <> 5", condition).
 test_condition(["45*5<>5 or not45<>5 not parsed by condition"]).
 
 test_conjunction([]) :-
-  test_phrase("not45<>5and45>6", conjunction).
+  test_phrase("not 45 <>5 and 45 >6", conjunction).
 test_conjunction(["not45<>5and45>6 not parsed by conjunction"]).
 
 test_logical_expr([]) :-
@@ -329,14 +329,14 @@ test_all([H | T]) :-
   ,test_indigirient
   ,test_arithmetic_expr
   ,test_real_arg
-  %,test_real_args_str
-  %,test_real_args
-  %,test_procedure_call
-  %,test_instruction
-  %,test_compound_instruction
-  %,test_rel_expr
-  %,test_condition
-  %,test_conjunction
+  ,test_real_args_str
+  ,test_real_args
+  ,test_procedure_call
+  ,test_instruction
+  ,test_compound_instruction
+  ,test_rel_expr
+  ,test_condition
+  ,test_conjunction
   %,test_logical_expr
   %,test_declaration
   %,test_block
