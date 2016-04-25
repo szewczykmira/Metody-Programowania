@@ -70,13 +70,16 @@ formal_arg_str --> formal_arg.
 formal_args --> formal_arg_str,!.
 formal_args --> [].
 
+% TO TEST!
 % real argument
 real_arg --> arithmetic_expr.
 
+% TO TEST!
 % real arguments string
 real_args_str --> real_arg, ",", real_args_str.
 real_args_str --> real_arg.
 
+% TO TEST!
 % real arguments
 real_args --> real_args_str.
 real_args --> [].
@@ -84,16 +87,18 @@ real_args --> [].
 % procedure name
 proc_name --> identifier.
 
+% TO TEST!
 % procedure
 procedure --> "procedure", proc_name, "(", formal_args, ")", block.
 
+% TO TEST!
 % procedure call
 procedure_call --> proc_name, "(", real_args, ")".
 
 % atom expression
-atom_expr --> procedure_call.
-atom_expr --> variable.
-atom_expr --> number.
+atom_expr --> procedure_call, !.
+atom_expr --> variable, !.
+atom_expr --> number, !.
 
 % simple expression
 simple_expr --> "(", arithmetic_expr, ")".
@@ -315,7 +320,7 @@ test_all([H | T]) :-
   ,test_variable
   ,test_variables
   ,test_formal_arg
-  %,test_proc_name
+  ,test_proc_name
   %,,test_declarator
   ,test_formal_arg_str
   ,test_formal_args
