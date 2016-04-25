@@ -29,8 +29,9 @@ add_op --> "-".
 % digits([H|T]) --> digit(H),!, digits(T).
 % number(D, N) --> digits(Ds), { number_chars(N, [D|Ds]) }.
 digit --> [D], {code_type(D,digit)}.
-digits --> digit.
-digits --> digit, digits.
+digits_acc --> digit, !, digits_acc.
+digits_acc --> [].
+digits --> digit, digits_acc.
 number --> digits.
 
 % letters and words
