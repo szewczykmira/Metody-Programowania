@@ -26,19 +26,14 @@ add_op --> "+",!.
 add_op --> "-",!.
 
 % digits and numbers
-% digit(D) --> [D], {code_type(D, digit)}.
-% digits([]) --> [].
-% digits([H|T]) --> digit(H),!, digits(T).
-% number(D, N) --> digits(Ds), { number_chars(N, [D|Ds]) }.
-digit --> [D], {code_type(D,digit)}.
-digits_acc --> digit, !, digits_acc.
-digits_acc --> [].
-digits --> digit, digits_acc.
-number --> digits.
+digit(D) --> [D], {code_type(D,digit)}.
+digits_acc([H|T]) --> digit(H), !, digits_acc(T).
+digits_acc([]) --> [].
+digits([H|T]) --> digit(H), digits_acc(T).
+number(D) --> digits(Ds), {number_chars(D,Ds)}.
 
 % letters and words
-% letter(L) --> [L], {code_type(L, alpha)}.
-letter --> [L], {code_type(L, alpha)}.
+letter(L) --> [L], {code_type(L, alpha)}.
 
 % identifier
 % ident([H|T]) --> [H], {code_type(H, csym); H=39},!, ident(T).
@@ -170,11 +165,11 @@ test_identifier([]) :-
 test_identifier(["a111 not parsed by identifer"]).
 
 test_digit([]) :- 
-  test_phrase("9", digit).
+  test_phrase("9", digit(57)).
 test_digit(["9 not parsed by digit"]).
 
 test_digits([]) :- 
-  test_phrase("987", digits).
+  test_phrase("987", digits([57,56,55])).
 test_digits(["987 not parsed by digits"]).
 
 test_variable([]) :- 
@@ -311,34 +306,34 @@ test_all([H | T]) :-
   test_all(T).
 
 :- test_all([
-  test_identifier
-  ,test_identifier
+  %test_identifier
+  test_digit
   ,test_digits
-  ,test_variable
-  ,test_variables
-  ,test_formal_arg
-  ,test_proc_name
-  ,test_declarator
-  ,test_formal_arg_str
-  ,test_formal_args
-  ,test_atom_expr
-  ,test_simple_expr
-  ,test_factor
-  ,test_indigirient
-  ,test_arithmetic_expr
-  ,test_real_arg
-  ,test_real_args_str
-  ,test_real_args
-  ,test_procedure_call
-  ,test_instruction
-  ,test_compound_instruction
-  ,test_rel_expr
-  ,test_condition
-  ,test_conjunction
-  ,test_logical_expr
-  ,test_declaration
-  ,test_block
-  ,test_declarations
-  ,test_procedure
-  ,test_program
+  %,test_variable
+  %,test_variables
+  %,test_formal_arg
+  %,test_proc_name
+  %,test_declarator
+  %,test_formal_arg_str
+  %,test_formal_args
+  %,test_atom_expr
+  %,test_simple_expr
+  %,test_factor
+  %,test_indigirient
+  %,test_arithmetic_expr
+  %,test_real_arg
+  %,test_real_args_str
+  %,test_real_args
+  %,test_procedure_call
+  %,test_instruction
+  %,test_compound_instruction
+  %,test_rel_expr
+  %,test_condition
+  %,test_conjunction
+  %,test_logical_expr
+  %,test_declaration
+  %,test_block
+  %,test_declarations
+  %,test_procedure
+  %,test_program
 ]).
