@@ -64,11 +64,11 @@ formal_args([]) --> [].
 
 % real argument
 real_arg(A) --> arithmetic_expr(A).
-% TO TEST
+
 % real arguments string
-real_args_stri([H|T]) --> real_arg(H), white_or_blank, ",", white_space, !, real_args_str(T).
+real_args_str([H|T]) --> real_arg(H), white_or_blank, ",", white_space, !, real_args_str(T).
 real_args_str([H]) --> real_arg(H).
-% TO TEST
+
 % real arguments
 real_args(A) --> real_args_str(A), !.
 real_args([]) --> [].
@@ -78,15 +78,15 @@ proc_name(A) --> identifier(A).
 % TO TEST
 % procedure
 procedure --> "procedure", white_space, proc_name, "(", white_or_blank, formal_args, white_or_blank, ")", white_space, block.
-% TO TEST
+
 % procedure call
-procedure_call --> proc_name, "(", white_or_blank, real_args, white_or_blank, ")".
+procedure_call(p_call(A, T)) --> proc_name(A), "(", white_or_blank, real_args(T), white_or_blank, ")".
 
 % atom expression
-%atom_expr(procedure_call(A)) --> procedure_call(A), !.
+atom_expr(A) --> procedure_call(A), !.
 atom_expr(variable(A)) --> variable(A), !.
 atom_expr(number(A)) --> number(A).
-% TO TEST
+
 % simple expression
 simple_expr(A) --> "(", white_or_blank,  arithmetic_expr(A), white_or_blank, ")", !.
 simple_expr(A) --> atom_expr(A).
@@ -104,18 +104,18 @@ arithmetic_expr(op(O,I,A)) --> indigrient(I), white_or_blank, add_op(O), white_o
 arithmetic_expr(A) --> indigrient(A).
 
 % instruction
-instruction --> "write", !, white_space, arithmetic_expr.
-instruction --> "read", !, white_space,  variable.
-instruction --> "return", !, white_space, arithmetic_expr.
-instruction --> "call", !, white_space, procedure_call.
+instruction(iwrite(A)) --> "write", !, white_space, arithmetic_expr(A).
+instruction(iread(V)) --> "read", !, white_space,  variable(V).
+instruction(ireturn(A)) --> "return", !, white_space, arithmetic_expr(A).
+instruction(icall(P)) --> "call", !, white_space, procedure_call(P).
 instruction --> "while", !, white_space,  logical_expr, white_space, "do", white_space, compound_instruction, white_space, "done".
 instruction --> "if", white_space, logical_expr, white_space, "then", white_space, compound_instruction, white_space, "else", !, white_space, compound_instruction, white_space, "fi".
 instruction --> "if", !, white_space, logical_expr, white_space, "then", white_space, compound_instruction, white_space, "fi".
 instruction --> variable, white_or_blank, ":=", white_or_blank, arithmetic_expr.
 
 % compound instruction
-compound_instruction --> instruction, white_or_blank, ";", white_space, !, compound_instruction.
-compound_instruction --> instruction.
+compound_instruction([H|T]) --> instruction(H), white_or_blank, ";", white_space, !, compound_instruction(T).
+compound_instruction([H]) --> instruction(H).
 
 % relational expression
 rel_expr --> "(", !, white_or_blank, logical_expr,white_or_blank, ")".
@@ -207,8 +207,8 @@ test_atom_expr([]) :-
 test_atom_expr(["45 and a45 not parsed by atom expression"]).
 
 test_simple_expr([]) :-
-  test_phrase("a45", simple_expr),
-  test_phrase("( -45*4+5)", simple_expr).
+  test_phrase("a45", simple_expr(variable("a45"))),
+  test_phrase("( -45*4+5)", simple_expr(op("+",op("*", -number(45), +number(4)) ,+number(5)))).
 test_simple_expr(["a45 or (-45*4+5) not parsed by simple expression"]).
 
 test_factor([]) :-
@@ -231,23 +231,23 @@ test_real_arg([]) :-
 test_real_arg(["-45*4+5 not parsed by real_arg"]).
 
 test_real_args_str([]) :-
-  test_phrase("-45*4+5, 45, 56+6", real_args_str),
-  test_phrase("-45 *4 + 6", real_args_str).
+  test_phrase("-45*4+5, 45, 56+6", real_args_str([op("+",op("*",-number(45) ,+number(4)) ,+number(5)), +number(45), op("+", +number(56), +number(6))])),
+  test_phrase("-45 *4 + 6", real_args_str([op("+",op("*",-number(45) ,+number(4) ) ,+number(6))])).
 test_real_args_str(["-45*4+5,45,56+6 or -45*4+6 not parsed by real_args_str"]).
 
 test_real_args([]) :-
-  test_phrase("-45*4, 45, 56+6", real_args),
-  test_phrase("", real_args).
+  test_phrase("-45*4, 45, 56+6", real_args([op("*", -number(45), +number(4)),+number(45) ,op("+", +number(56), +number(6))])),
+  test_phrase("", real_args([])).
 test_real_args(["-45*4,45,56+6 or empty not parsed by real_args"]).
 
 test_procedure_call([]) :-
-  test_phrase("ea23( 45, 5*6)", procedure_call).
+  test_phrase("ea23( 45, 5*6)", procedure_call(p_call("ea23", [+number(45), op("*", +number(5), +number(6))]))).
 test_procedure_call(["ea23(45,5*6) not parsed by procedure_call"]).
 
 test_instruction([]) :-
-  test_phrase("write 45 * 5* 6", instruction),
-  test_phrase("read b45", instruction),
-  test_phrase("return 45* 5*6", instruction),
+  test_phrase("write 45 * 5", instruction(iwrite(op("*", +number(45), +number(5))))),
+  test_phrase("read b45", instruction(iread("b45"))),
+  test_phrase("return 45* 5", instruction(ireturn(op("*", +number(45), +number(5))))),
   test_phrase("call a23( 45, 5*6)", instruction),
   test_phrase("while not45>5 do read r4 done", instruction),
   test_phrase("if not34>4 then read r4 else write 3* 4 fi", instruction),
@@ -256,7 +256,8 @@ test_instruction([]) :-
 test_instruction(["<<write45*5*6>> or <<readb45>> or <<return45*5*6>> or ... not parsed by instruction"]).
 
 test_compound_instruction([]) :-
-  test_phrase("call ea23(45, 5*6); write 45", compound_instruction).
+  test_phrase("call ea23(45, 5*6); write 45", compound_instruction([icall(p_call("ea23", [+number(45), op("*", +number(5), +number(6))])), iwrite(+number(45))])).
+test_compound_instruction(["X is not parsed by compound_instruction"]).
 
 test_rel_expr([]) :-
   test_phrase("45*5 <> 5", rel_expr),
@@ -313,16 +314,16 @@ test_all([H | T]) :-
   ,test_formal_arg_str
   ,test_formal_args
   ,test_atom_expr
-  %,test_simple_expr
+  ,test_simple_expr
   ,test_factor
   ,test_indigirient
   ,test_arithmetic_expr
   ,test_real_arg
-  %,test_real_args_str
-  %,test_real_args
-  %,test_procedure_call
+  ,test_real_args_str
+  ,test_real_args
+  ,test_procedure_call
   %,test_instruction
-  %,test_compound_instruction
+  ,test_compound_instruction
   %,test_rel_expr
   %,test_condition
   %,test_conjunction
