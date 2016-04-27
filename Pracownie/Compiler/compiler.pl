@@ -39,13 +39,13 @@ letter(L) --> [L], {code_type(L, alpha)}.
 % ident([H|T]) --> [H], {code_type(H, csym); H=39},!, ident(T).
 % ident([]) --> [].
 % identifier(L, Id) --> ident(As),{atom_codes(Id, [L|As])}.
-special_char --> "_".
-special_char --> "'".
-ident --> letter, !, ident.
-ident --> special_char, !, ident.
-ident --> digit, !, ident.
-ident --> [].
-identifier --> letter, ident.
+special_char(X) --> "_",!,{atom_codes("_",[X])}.
+special_char(X) --> "'", {atom_codes("'", [X])}.
+ident([L|T]) --> letter(L), !, ident(T).
+ident([C|T]) --> special_char(C), !, ident(T).
+ident([D|T]) --> digit(D), !, ident(T).
+ident([]) --> [].
+identifier(A) --> letter(L), ident(I), {atom_codes(A,[L|I])}.
 
 % variable
 % variable(L,Id) --> identifier(L,Id).
@@ -161,7 +161,7 @@ test_phrase(String, Pred) :-
   atom_codes(String, Codes), phrase(Pred, Codes).
 
 test_identifier([]) :- 
-  test_phrase("a111", identifier).
+  test_phrase("a111", identifier("a111")).
 test_identifier(["a111 not parsed by identifer"]).
 
 test_digit([]) :- 
@@ -306,8 +306,8 @@ test_all([H | T]) :-
   test_all(T).
 
 :- test_all([
-  %test_identifier
-  test_digit
+  test_identifier
+  ,test_digit
   ,test_digits
   %,test_variable
   %,test_variables
