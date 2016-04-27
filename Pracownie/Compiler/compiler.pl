@@ -9,21 +9,21 @@ white_or_blank --> white_space, !.
 white_or_blank --> [].
 
 % relational operators
-rel_op --> "<=",!.
-rel_op --> ">=",!.
-rel_op --> "<>",!.
-rel_op --> "<",!.
-rel_op --> ">",!.
-rel_op --> "=".
+rel_op("<=") --> "<=",!.
+rel_op(">=") --> ">=",!.
+rel_op("<>") --> "<>",!.
+rel_op("<") --> "<",!.
+rel_op(">") --> ">",!.
+rel_op("=") --> "=".
 
 % multiplikative operators
-mul_op --> "*",!.
-mul_op --> "div",!.
-mul_op --> "mod",!.
+mul_op("*") --> "*",!.
+mul_op("div") --> "div",!.
+mul_op("mod") --> "mod",!.
 
 % additive operators
-add_op --> "+",!.
-add_op --> "-",!.
+add_op("+") --> "+",!.
+add_op("-") --> "-",!.
 
 % digits and numbers
 digit(D) --> [D], {code_type(D,digit)}.
@@ -36,9 +36,6 @@ number(D) --> digits(Ds), {number_chars(D,Ds)}.
 letter(L) --> [L], {code_type(L, alpha)}.
 
 % identifier
-% ident([H|T]) --> [H], {code_type(H, csym); H=39},!, ident(T).
-% ident([]) --> [].
-% identifier(L, Id) --> ident(As),{atom_codes(Id, [L|As])}.
 special_char(X) --> "_",!,{atom_codes("_",[X])}.
 special_char(X) --> "'", {atom_codes("'", [X])}.
 ident([L|T]) --> letter(L), !, ident(T).
@@ -62,50 +59,49 @@ formal_arg_str([H|T]) --> formal_arg(H), white_or_blank, ",", white_space, !, fo
 formal_arg_str([H]) --> formal_arg(H).
 
 % formal arguments
-formal_args --> formal_arg_str,!.
-formal_args --> [].
+formal_args(A) --> formal_arg_str(A),!.
+formal_args([]) --> [].
 
 % real argument
-real_arg --> arithmetic_expr.
-
+real_arg(A) --> arithmetic_expr(A).
+% TO TEST
 % real arguments string
-real_args_str --> real_arg, white_or_blank, ",", white_space, !, real_args_str.
-real_args_str --> real_arg.
-
+real_args_stri([H|T]) --> real_arg(H), white_or_blank, ",", white_space, !, real_args_str(T).
+real_args_str([H]) --> real_arg(H).
+% TO TEST
 % real arguments
-real_args --> real_args_str, !.
-real_args --> [].
+real_args(A) --> real_args_str(A), !.
+real_args([]) --> [].
 
 % procedure name
-proc_name --> identifier.
-
-% TO TEST!
+proc_name(A) --> identifier(A).
+% TO TEST
 % procedure
 procedure --> "procedure", white_space, proc_name, "(", white_or_blank, formal_args, white_or_blank, ")", white_space, block.
-
+% TO TEST
 % procedure call
 procedure_call --> proc_name, "(", white_or_blank, real_args, white_or_blank, ")".
 
 % atom expression
-atom_expr --> procedure_call, !.
-atom_expr --> variable, !.
-atom_expr --> number.
-
+%atom_expr(procedure_call(A)) --> procedure_call(A), !.
+atom_expr(variable(A)) --> variable(A), !.
+atom_expr(number(A)) --> number(A).
+% TO TEST
 % simple expression
-simple_expr --> "(", white_or_blank,  arithmetic_expr, white_or_blank, ")", !.
-simple_expr --> atom_expr.
+simple_expr(A) --> "(", white_or_blank,  arithmetic_expr(A), white_or_blank, ")", !.
+simple_expr(A) --> atom_expr(A).
 
 % factor (czynnik)
-factor --> "-", simple_expr,!.
-factor --> simple_expr.
+factor(-(A)) --> "-", simple_expr(A),!.
+factor(+(A)) --> simple_expr(A).
 
 % indigrient (skladnik)
-indigrient --> factor, white_or_blank, mul_op, white_or_blank,!, indigrient.
-indigrient --> factor.
+indigrient(op(A, F, I)) --> factor(F), white_or_blank, mul_op(A), white_or_blank,!, indigrient(I).
+indigrient(F) --> factor(F).
 
 % arithmetic expression
-arithmetic_expr --> indigrient, white_or_blank, add_op, white_or_blank, !,  arithmetic_expr.
-arithmetic_expr --> indigrient.
+arithmetic_expr(op(O,I,A)) --> indigrient(I), white_or_blank, add_op(O), white_or_blank, !,  arithmetic_expr(A).
+arithmetic_expr(A) --> indigrient(A).
 
 % instruction
 instruction --> "write", !, white_space, arithmetic_expr.
@@ -193,12 +189,12 @@ test_formal_arg_str([]) :-
 test_formal_arg_str(["aqwer, <<awer,wet3>> and <<awe,valuewe2>> not parsed by formal_arg_str"]).
 
 test_formal_args([]) :- 
-  test_phrase("",formal_args),
-  test_phrase("awe, value we2", formal_args).
+  test_phrase("",formal_args([])),
+  test_phrase("awe, value we2", formal_args([name("awe"), value("we2")])).
 test_formal_args(["empty and awe,valuewe2 not parsed by formal_args"]).
 
 test_proc_name([]) :- 
-  test_phrase("a112", proc_name).
+  test_phrase("a112", proc_name("a112")).
 test_proc_name(["a112 not parsed by proc_name"]).
 
 test_declarator([]) :- 
@@ -206,8 +202,8 @@ test_declarator([]) :-
 test_declarator(["locala112 not parsed by delarator"]).
 
 test_atom_expr([]) :- 
-  test_phrase("45", atom_expr),
-  test_phrase("a45", atom_expr).
+  test_phrase("45", atom_expr(number(45))),
+  test_phrase("a45", atom_expr(variable("a45"))).
 test_atom_expr(["45 and a45 not parsed by atom expression"]).
 
 test_simple_expr([]) :-
@@ -216,22 +212,22 @@ test_simple_expr([]) :-
 test_simple_expr(["a45 or (-45*4+5) not parsed by simple expression"]).
 
 test_factor([]) :-
-  test_phrase("a45", factor),
-  test_phrase("-45", factor).
+  test_phrase("a45", factor(+(variable("a45")))),
+  test_phrase("-45", factor(-(number(45)))).
 test_factor(["a45 or -45 not parsed by factor"]).
 
 test_indigirient([]) :-
-  test_phrase("-45", indigrient),
-  test_phrase("-45 div 4", indigrient).
+  test_phrase("-45", indigrient(-(number(45)))),
+  test_phrase("-45 div 4", indigrient(op("div", -(number(45)), +(number(4))))).
 test_indigirient(["-45 or -45div4 not parsed by indigrient"]).
 
 test_arithmetic_expr([]) :-
-  test_phrase("-45*4", arithmetic_expr),
-  test_phrase("-45 *4+ 5", arithmetic_expr).
+  test_phrase("-45*4", arithmetic_expr(op("*", -(number(45)), +(number(4))))),
+  test_phrase("-45 *4+ 5", arithmetic_expr(op("+" ,op("*",-(number(45)) ,+(number(4))) ,+(number(5))))).
 test_arithmetic_expr(["-45*4 or -45*4+5 not parsed by arithmetic_expr"]).
 
 test_real_arg([]) :-
-  test_phrase("-45*4+5", real_arg).
+  test_phrase("-45*4+5", real_arg(op("+" ,op("*",-(number(45)) ,+(number(4))) ,+(number(5))))).
 test_real_arg(["-45*4+5 not parsed by real_arg"]).
 
 test_real_args_str([]) :-
@@ -312,16 +308,16 @@ test_all([H | T]) :-
   ,test_variable
   ,test_variables
   ,test_formal_arg
-  %,test_proc_name
+  ,test_proc_name
   %,test_declarator
   ,test_formal_arg_str
-  %,test_formal_args
-  %,test_atom_expr
+  ,test_formal_args
+  ,test_atom_expr
   %,test_simple_expr
-  %,test_factor
-  %,test_indigirient
-  %,test_arithmetic_expr
-  %,test_real_arg
+  ,test_factor
+  ,test_indigirient
+  ,test_arithmetic_expr
+  ,test_real_arg
   %,test_real_args_str
   %,test_real_args
   %,test_procedure_call
