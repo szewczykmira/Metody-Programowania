@@ -49,17 +49,17 @@ identifier(A) --> letter(L), ident(I), {atom_codes(A,[L|I])}.
 
 % variable
 % variable(L,Id) --> identifier(L,Id).
-variable --> identifier.
-variables --> variable, white_or_blank, ",", white_space, !, variables.
-variables --> variable.
+variable(A) --> identifier(A).
+variables([H|T]) --> variable(H), white_or_blank, ",", white_space, !, variables(T).
+variables([A]) --> variable(A).
 
 % formal argument
-formal_arg --> "value", white_space, !, variable.
-formal_arg --> variable.
+formal_arg(value(A)) --> "value", white_space, !, variable(A).
+formal_arg(name(A)) --> variable(A).
 
 % string of formal arguments
-formal_arg_str --> formal_arg, white_or_blank, ",", white_space, !, formal_arg_str.
-formal_arg_str --> formal_arg.
+formal_arg_str([H|T]) --> formal_arg(H), white_or_blank, ",", white_space, !, formal_arg_str(T).
+formal_arg_str([H]) --> formal_arg(H).
 
 % formal arguments
 formal_args --> formal_arg_str,!.
@@ -173,23 +173,23 @@ test_digits([]) :-
 test_digits(["987 not parsed by digits"]).
 
 test_variable([]) :- 
-  test_phrase("a112", variable).
+  test_phrase("a112", variable("a112")).
 test_variable(["a112 not parsed by variable"]).
 
 test_variables([]) :- 
-  test_phrase("a112", variables), 
-  test_phrase("a112, aa", variables).
+  test_phrase("a112", variables(["a112"])), 
+  test_phrase("a112, aa", variables(["a112", "aa"])).
 test_variables(["a112 or a112,aa not parsed by variables"]).
 
 test_formal_arg([]) :- 
-  test_phrase("a112", formal_arg), 
-  test_phrase("value a112", formal_arg).
+  test_phrase("a112", formal_arg(name("a112"))), 
+  test_phrase("value a112", formal_arg(value("a112"))).
 test_formal_arg(["a112 or valuea112 not parsed by formal_arg"]).
 
 test_formal_arg_str([]) :- 
-  test_phrase("aqwer", formal_arg_str), 
-  test_phrase("awer, wet3", formal_arg_str), 
-  test_phrase("awe, valuewe2", formal_arg_str).
+  test_phrase("aqwer", formal_arg_str([name("aqwer")])), 
+  test_phrase("awer, wet3", formal_arg_str([name("awer"), name("wet3")])), 
+  test_phrase("awe, value we2", formal_arg_str([name("awe"), value("we2")])).
 test_formal_arg_str(["aqwer, <<awer,wet3>> and <<awe,valuewe2>> not parsed by formal_arg_str"]).
 
 test_formal_args([]) :- 
@@ -309,12 +309,12 @@ test_all([H | T]) :-
   test_identifier
   ,test_digit
   ,test_digits
-  %,test_variable
-  %,test_variables
-  %,test_formal_arg
+  ,test_variable
+  ,test_variables
+  ,test_formal_arg
   %,test_proc_name
   %,test_declarator
-  %,test_formal_arg_str
+  ,test_formal_arg_str
   %,test_formal_args
   %,test_atom_expr
   %,test_simple_expr
