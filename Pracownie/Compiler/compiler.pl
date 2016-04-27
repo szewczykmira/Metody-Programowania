@@ -108,30 +108,30 @@ instruction(iwrite(A)) --> "write", !, white_space, arithmetic_expr(A).
 instruction(iread(V)) --> "read", !, white_space,  variable(V).
 instruction(ireturn(A)) --> "return", !, white_space, arithmetic_expr(A).
 instruction(icall(P)) --> "call", !, white_space, procedure_call(P).
-instruction --> "while", !, white_space,  logical_expr, white_space, "do", white_space, compound_instruction, white_space, "done".
-instruction --> "if", white_space, logical_expr, white_space, "then", white_space, compound_instruction, white_space, "else", !, white_space, compound_instruction, white_space, "fi".
-instruction --> "if", !, white_space, logical_expr, white_space, "then", white_space, compound_instruction, white_space, "fi".
-instruction --> variable, white_or_blank, ":=", white_or_blank, arithmetic_expr.
+instruction(while(Le, Ci)) --> "while", !, white_space,  logical_expr(Le), white_space, "do", white_space, compound_instruction(Ci), white_space, "done".
+instruction(ifelse(Le, I, E)) --> "if", white_space, logical_expr(Le), white_space, "then", white_space, compound_instruction(I), white_space, "else", !, white_space, compound_instruction(E), white_space, "fi".
+instruction(if(Le, I)) --> "if", !, white_space, logical_expr(Le), white_space, "then", white_space, compound_instruction(I), white_space, "fi".
+instruction(assign(V,W)) --> variable(V), white_or_blank, ":=", white_or_blank, arithmetic_expr(W).
 
 % compound instruction
 compound_instruction([H|T]) --> instruction(H), white_or_blank, ";", white_space, !, compound_instruction(T).
 compound_instruction([H]) --> instruction(H).
 
 % relational expression
-rel_expr --> "(", !, white_or_blank, logical_expr,white_or_blank, ")".
-rel_expr --> arithmetic_expr, white_or_blank, rel_op, white_or_blank, arithmetic_expr.
+rel_expr(A) --> "(", !, white_or_blank, logical_expr(A),white_or_blank, ")".
+rel_expr(op(O,A,B)) --> arithmetic_expr(A), white_or_blank, rel_op(O), white_or_blank, arithmetic_expr(B).
 
 % condition (warunek)
-condition --> "not", white_space, !, rel_expr.
-condition --> rel_expr.
+condition(not(A)) --> "not", white_space, !, rel_expr(A).
+condition(A) --> rel_expr(A).
 
 % conjunction
-conjunction --> condition, white_space, "and", !, white_space, conjunction.
-conjunction --> condition.
+conjunction([H|T]) --> condition(H), white_space, "and", !, white_space, conjunction(T).
+conjunction([H]) --> condition(H).
 
 % logical expression
-logical_expr --> conjunction, white_space, "or", !, white_space, logical_expr.
-logical_expr --> conjunction.
+logical_expr([H|T]) --> conjunction(H), white_space, "or", !, white_space, logical_expr(T).
+logical_expr([H]) --> conjunction(H).
 
 % declarator
 declarator --> "local", white_space, variables.
@@ -248,11 +248,11 @@ test_instruction([]) :-
   test_phrase("write 45 * 5", instruction(iwrite(op("*", +number(45), +number(5))))),
   test_phrase("read b45", instruction(iread("b45"))),
   test_phrase("return 45* 5", instruction(ireturn(op("*", +number(45), +number(5))))),
-  test_phrase("call a23( 45, 5*6)", instruction),
-  test_phrase("while not45>5 do read r4 done", instruction),
-  test_phrase("if not34>4 then read r4 else write 3* 4 fi", instruction),
-  test_phrase("if not 34>4 then read r4 fi", instruction),
-  test_phrase("awe := 3*4", instruction).
+  test_phrase("call a23( 45, 5*6)", instruction(icall(p_call("a23", [+number(45), op("*", +number(5), +number(6))])))),
+  test_phrase("while not45>5 do read r4 done", instruction(while([[op(">", +variable("not45"), +number(5))]], [iread("r4")]))),
+  test_phrase("if not34>4 then read r4 else read re fi", instruction(ifelse([[op(">", +variable("not34"), +number(4))]], [iread("r4")], [iread("re")]))),
+  test_phrase("if not 34>4 then read r4 fi", instruction(if([[not(op(">", +number(34), +number(4)))]], [iread("r4")]))),
+  test_phrase("awe := 3*4", instruction(assign("awe", op("*", +number(3), +number(4))))).
 test_instruction(["<<write45*5*6>> or <<readb45>> or <<return45*5*6>> or ... not parsed by instruction"]).
 
 test_compound_instruction([]) :-
@@ -260,21 +260,21 @@ test_compound_instruction([]) :-
 test_compound_instruction(["X is not parsed by compound_instruction"]).
 
 test_rel_expr([]) :-
-  test_phrase("45*5 <> 5", rel_expr),
-  test_phrase("(not 45 <> 5 and 45 > 6 or 45<> 7)", rel_expr).
+  test_phrase("45*5 <> 5", rel_expr(op("<>",op("*", +number(45), +number(5)) ,+number(5)))),
+  test_phrase("(not 45 <> 5 and 45 > 6 or 45<> 7)", rel_expr([[not(op("<>",+number(45), +number(5))),op(">", +number(45), +number(6))],[op("<>", +number(45), +number(7))]])).
 test_rel_expr(["45*5<>5 not parsed by rel_expr"]).
 
 test_condition([]) :-
-  test_phrase("45* 5 <> 5", condition),
-  test_phrase("not 45 <> 5", condition).
+  test_phrase("45* 5 <> 5", condition(op("<>",op("*", +number(45), +number(5)) ,+number(5)))),
+  test_phrase("not 45 <> 5", condition(not(op("<>",+number(45),+number(5))))).
 test_condition(["45*5<>5 or not45<>5 not parsed by condition"]).
 
 test_conjunction([]) :-
-  test_phrase("not 45 <>5 and 45 >6", conjunction).
+  test_phrase("not 45 <>5 and 45 >6", conjunction([not(op("<>", +number(45), +number(5))), op(">", +number(45),+number(6))])).
 test_conjunction(["not45<>5and45>6 not parsed by conjunction"]).
 
 test_logical_expr([]) :-
-  test_phrase("not 45 <>5 and 45> 6 or not 5 > 4", logical_expr).
+  test_phrase("not 45 <>5 and 45> 6 or not 5 > 4", logical_expr([[not(op("<>", +number(45), +number(5))), op(">", +number(45), +number(6))], [not(op(">", +number(5), +number(4)))]])).
 test_logical_expr(["not45<>5and45>6ornot5>4 not parsed by logical_expr"]).
 
 test_declaration([]) :-
@@ -322,12 +322,12 @@ test_all([H | T]) :-
   ,test_real_args_str
   ,test_real_args
   ,test_procedure_call
-  %,test_instruction
+  ,test_instruction
   ,test_compound_instruction
-  %,test_rel_expr
-  %,test_condition
-  %,test_conjunction
-  %,test_logical_expr
+  ,test_rel_expr
+  ,test_condition
+  ,test_conjunction
+  ,test_logical_expr
   %,test_declaration
   %,test_block
   %,test_declarations
