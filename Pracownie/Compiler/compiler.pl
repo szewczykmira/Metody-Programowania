@@ -199,7 +199,6 @@ eval(op("-", Var1, Var2), Env, Val) :-
   eval(Var1, Env, Val1),
   eval(Var2, Env, Val2),
   Val is Val1 - Val2.
-% totalnie nie wiem jak zrobic relacyjne wyrazenia :(
 
 puts(Var, Val, [(Var, _)| T], [(Var, Val)|T]).
 puts(Var, Val, EnvIn, [(Var,Val)|EnvIn]) :-
@@ -219,7 +218,64 @@ interpret(iread(Arg), EnvIn, EnvOut) :-
 interpret(ireturn(Arg), EnvIn, EnvOut) :- eval(Arg, EnvIn, Val).
 % w sumie tutaj tak samo
 interpret(icall(A), EnvIn, EnvOut) :-
-  eval(A, EnvIn, EnvOut)
+  eval(A, EnvIn, EnvOut).
+
+interpret(while(Logic, Compound), EnvIn, EnvOut) :-
+  eval_logic(Logic),!,
+  interpret(Compound, EnvIn, EnvOut1), 
+  interpret(while(Logic, Compound), EnvOut1, EnvOut).
+interpret(while(_,_), _, _).
+
+interpret(ifelse(Logic,If,_), EnvIn, EnvOut) :-
+  eval_logic(Logic), !, 
+  interpret(If, EnvIn, EnvOut).
+interpret(ifelse(_, _, Else), EnvIn, EnvOut) :- 
+  interpret(Else, EnvIn, EnvOut).
+
+interpret(if(Logic,If), EnvIn, EnvOut) :-
+  eval_logic(Logic), !, 
+  interpret(If, EnvIn, EnvOut).
+interpret(if(_, _), _, _).
+
+interpret(assing(Var, Val), EnvIn, EnvOut) :- 
+  puts(Var, Val, EnvIn, EnvOut).
+
+interpret([], EnvIn, EnvIn):-!.
+interpret([H|T], EnvIn, EnvOut) :- 
+  interpret(H, EnvIn, EnvOut1),
+  interpret(T, EnvOut1, EnvOut).
+
+eval_logic([], _).
+eval_logic([H|T], EnvIn) :-
+  and(H, EnvIn);
+  eval_logic(T, EnvIn).
+
+and([], _).
+and([H|T], EnvIn) :-
+  eval_rel(H, EnvIn),
+  and(T, EnvIn).
+
+eval_rel(not(A), EnvIn) :- \+ eval_rel(A, EnvIn).
+eval_rel(op("<=", Var1, Var2), EnvIn) :-
+  eval(Var1, EnvIn, Val1),
+  eval(Var2, EnvIn, Val2),
+  Val1 =< Val2.
+eval_rel(op(">=", Var1, Var2), EnvIn) :-
+  eval(Var1, EnvIn, Val1),
+  eval(Var2, EnvIn, Val2),
+  Val1 >= Val2.
+eval_rel(op("<", Var1, Var2), EnvIn) :-
+  eval(Var1, EnvIn, Val1),
+  eval(Var2, EnvIn, Val2),
+  Val1 < Val2.
+eval_rel(op(">", Var1, Var2), EnvIn) :-
+  eval(Var1, EnvIn, Val1),
+  eval(Var2, EnvIn, Val2),
+  Val1 > Val2.
+eval_rel(op("<>", Var1, Var2), EnvIn) :-
+  eval(Var1, EnvIn, Val1),
+  eval(Var2, EnvIn, Val2),
+  Val1 \= Val2.
 
 test_eval(Expr, Env, Val) :- 
   atom_codes(Expr, Atom),
