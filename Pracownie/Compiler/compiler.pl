@@ -2,9 +2,13 @@
 % first of all we need to define parser for algol16
 
 % white spaces
-white --> [C], {code_type(C, space) },!, white.
+smt --> [_], smt.
+smt --> [].
+comment --> "(*", smt, "*)",!.
+white --> [C],{code_type(C, space) },!, white.
 white --> [].
-white_space --> [C], {code_type(C,space)},white.
+white_space --> [C], {code_type(C,space)},white,!.
+white_space --> comment.
 white_or_blank --> white_space, !.
 white_or_blank --> [].
 
@@ -152,7 +156,40 @@ block(block(A,I)) --> declarations(A), white_space, "begin", white_space, compou
 % program
 program(program(Id, B)) --> "program", white_space, identifier(Id), white_space, block(B).
 
-% Testing
+% ===== INTERPRETER ==========
+
+parsing(String, Expr) :- 
+  atom_codes(String, List),
+  phrase(program(Expr), List).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% ====== TESTING ===========
+
 test_phrase(String, Pred) :- 
   atom_codes(String, Codes), phrase(Pred, Codes).
 
