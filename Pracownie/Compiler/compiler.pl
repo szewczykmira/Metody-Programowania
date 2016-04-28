@@ -49,7 +49,6 @@ ident([]) --> [].
 identifier(A) --> letter(L), ident(I), {atom_codes(A,[L|I])}.
 
 % variable
-% variable(L,Id) --> identifier(L,Id).
 variable(A) --> identifier(A).
 variables([H|T]) --> variable(H), white_or_blank, ",", white_space, !, variables(T).
 variables([A]) --> variable(A).
@@ -162,6 +161,16 @@ parsing(String, Expr) :-
   atom_codes(String, List),
   phrase(program(Expr), List).
 
+
+% dodac ewaluacje proc_call
+eval(number(Arg), _, Arg).
+eval(variable(Var), Env, Arg) :- 
+  member((Var,Arg), Env).
+% a co jezeli nie ma zdefiniowanej tej zmiennej?
+eval(-(Arg), Env, Val) :- 
+  eval(Arg, Env, Val1), Val is (-1)*Val1.
+eval(+(Arg), Env, Val) :-
+  eval(Arg, Env, Val).
 
 
 
