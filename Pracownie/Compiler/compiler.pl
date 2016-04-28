@@ -162,7 +162,7 @@ parsing(String, Expr) :-
   phrase(program(Expr), List).
 
 
-% dodac ewaluacje proc_call
+% zrobic jeszcze dla procedure_call
 eval(number(Arg), _, Arg).
 eval(variable(Var), Env, Arg) :- 
   member((Var,Arg), Env).
@@ -171,11 +171,31 @@ eval(-(Arg), Env, Val) :-
   eval(Arg, Env, Val1), Val is (-1)*Val1.
 eval(+(Arg), Env, Val) :-
   eval(Arg, Env, Val).
+eval(op("*", Var1, Var2), Env, Val) :-
+  eval(Var1, Env, Val1),
+  eval(Var2, Env, Val2),
+  Val is Val1 * Val2.
+eval(op("div", Var1, Var2), Env, Val) :-
+  eval(Var1, Env, Val1),
+  eval(Var2, Env, Val2),
+  Val is Val1 div Val2.
+eval(op("mod", Var1, Var2), Env, Val) :-
+  eval(Var1, Env, Val1),
+  eval(Var2, Env, Val2),
+  Val is Val1 mod Val2.
+eval(op("+", Var1, Var2), Env, Val) :-
+  eval(Var1, Env, Val1),
+  eval(Var2, Env, Val2),
+  Val is Val1 + Val2.
+eval(op("-", Var1, Var2), Env, Val) :-
+  eval(Var1, Env, Val1),
+  eval(Var2, Env, Val2),
+  Val is Val1 - Val2.
 
-
-
-
-
+test_eval(Expr, Env, Val) :- 
+  atom_codes(Expr, Atom),
+  phrase(arithmetic_expr(Sm), Atom),
+  eval(Sm, Env, Val).
 
 
 
