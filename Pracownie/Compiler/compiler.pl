@@ -277,24 +277,20 @@ eval_rel(op("<>", Var1, Var2), EnvIn) :-
   eval(Var2, EnvIn, Val2),
   Val1 \= Val2.
 
+
+
+
+
+
+
+
+
+
+
 test_eval(Expr, Env, Val) :- 
   atom_codes(Expr, Atom),
   phrase(arithmetic_expr(Sm), Atom),
   eval(Sm, Env, Val).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
