@@ -80,7 +80,7 @@ real_args([]) --> [].
 proc_name(A) --> identifier(A).
 
 % procedure
-procedure(procedure(A, B, C)) --> "procedure", white_space, proc_name(A), "(", white_or_blank, formal_args(B), white_or_blank, ")", white_space, block(C).
+procedure(procedure(A, B, C)) --> "procedure", white_space, proc_name(A), white_or_blank, "(", white_or_blank, formal_args(B), white_or_blank, ")", white_space, block(C).
 
 % procedure call
 procedure_call(p_call(A, T)) --> proc_name(A), "(", white_or_blank, real_args(T), white_or_blank, ")".
@@ -164,33 +164,62 @@ parsing(String, Expr) :-
 
 % zrobic jeszcze dla procedure_call
 eval(number(Arg), _, Arg).
+
 eval(variable(Var), Env, Arg) :- 
   member((Var,Arg), Env).
 % a co jezeli nie ma zdefiniowanej tej zmiennej?
+
 eval(-(Arg), Env, Val) :- 
   eval(Arg, Env, Val1), Val is (-1)*Val1.
+
 eval(+(Arg), Env, Val) :-
   eval(Arg, Env, Val).
+
 eval(op("*", Var1, Var2), Env, Val) :-
   eval(Var1, Env, Val1),
   eval(Var2, Env, Val2),
   Val is Val1 * Val2.
+
 eval(op("div", Var1, Var2), Env, Val) :-
   eval(Var1, Env, Val1),
   eval(Var2, Env, Val2),
   Val is Val1 div Val2.
+
 eval(op("mod", Var1, Var2), Env, Val) :-
   eval(Var1, Env, Val1),
   eval(Var2, Env, Val2),
   Val is Val1 mod Val2.
+
 eval(op("+", Var1, Var2), Env, Val) :-
   eval(Var1, Env, Val1),
   eval(Var2, Env, Val2),
   Val is Val1 + Val2.
+
 eval(op("-", Var1, Var2), Env, Val) :-
   eval(Var1, Env, Val1),
   eval(Var2, Env, Val2),
   Val is Val1 - Val2.
+% totalnie nie wiem jak zrobic relacyjne wyrazenia :(
+
+puts(Var, Val, [(Var, _)| T], [(Var, Val)|T]).
+puts(Var, Val, EnvIn, [(Var,Val)|EnvIn]) :-
+  \+member((Var, _), EnvIn).
+puts(Var, Val, [_|T], EnvOut) :-
+  puts(Var, Val, T, EnvOut).
+
+interpret(iwrite(Arg), EnvIn, _) :-
+  eval(Arg, EnvIn, Val),
+  print(Val).
+
+interpret(iread(Arg), EnvIn, EnvOut) :- 
+  read(X),
+  puts(Arg, X, EnvIn, EnvOut). 
+
+% totalnie nie mam pomyslu co to moze robic
+interpret(ireturn(Arg), EnvIn, EnvOut) :- eval(Arg, EnvIn, Val).
+% w sumie tutaj tak samo
+interpret(icall(A), EnvIn, EnvOut) :-
+  eval(A, EnvIn, EnvOut)
 
 test_eval(Expr, Env, Val) :- 
   atom_codes(Expr, Atom),
