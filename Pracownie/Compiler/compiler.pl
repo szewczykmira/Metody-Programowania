@@ -128,12 +128,12 @@ condition(not(A)) --> "not", white_space, !, rel_expr(A).
 condition(A) --> rel_expr(A).
 
 % conjunction
-conjunction([H|T]) --> condition(H), white_space, "and", !, white_space, conjunction(T).
-conjunction([H]) --> condition(H).
+conjunction(and([H|T])) --> condition(H), white_space, "and", !, white_space, conjunction(and(T)).
+conjunction(and([H])) --> condition(H).
 
 % logical expression
-logical_expr([H|T]) --> conjunction(H), white_space, "or", !, white_space, logical_expr(T).
-logical_expr([H]) --> conjunction(H).
+logical_expr(or([H|T])) --> conjunction(H), white_space, "or", !, white_space, logical_expr(or(T)).
+logical_expr(or([H])) --> conjunction(H).
 
 % declarator
 declarator(local(A)) --> "local", white_space, variables(A).
@@ -190,17 +190,17 @@ eval(op("mod", Var1, Var2), Env, Val) :-
   Val is Val1 mod Val2.
 
 eval(op("+", Var1, Var2), Env, Val) :-
-  eval(Var1, Env, Val1),
+  !, eval(Var1, Env, Val1),
   eval(Var2, Env, Val2),
   Val is Val1 + Val2.
 
 eval(op("-", Var1, Var2), Env, Val) :-
-  eval(Var1, Env, Val1),
+  !, eval(Var1, Env, Val1),
   eval(Var2, Env, Val2),
   Val is Val1 - Val2.
 
 eval(not(A), EnvIn, false) :- eval(A, EnvIn, B), B, !.
-eval(not(_), _, true).
+eval(not(_), _, true) :- !.
 
 eval(op("<=", Var1, Var2), EnvIn, true) :-
   eval(Var1, EnvIn, Val1),
@@ -228,14 +228,19 @@ eval(op("<>", Var1, Var2), EnvIn, true) :-
   Val1 \= Val2, !.
 eval(op("<>", _, _), _, false).
 
-eval([], _, true).
-eval([H|T], EnvIn, true) :- and(H, EnvIn, true);
-  eval_logic(T, EnvIn),!.
+eval(or([]), _, false) :- !.
+eval(or([H|_]), EnvIn, true) :-
+  eval(H, EnvIn, Y),
+  Y, !.
+eval(or([_|T]), EnvIn, X) :- 
+  eval(or(T), EnvIn, X).
 
-and([], _, true).
-and([H|T], EnvIn, true) :-
-  eval(H, EnvIn),
-  and(T, EnvIn), !.
+eval(and([]), _, true) :- !.
+eval(and([H|_]), EnvIn, false) :-
+  eval(H, EnvIn, Y),
+  \+ Y, !.
+eval(and([_|T]), EnvIn, X) :-
+  eval(and(T), EnvIn, X).
 
 puts(Var, Val, [(Var, _)| T], [(Var, Val)|T]).
 puts(Var, Val, EnvIn, [(Var,Val)|EnvIn]) :-
@@ -405,9 +410,9 @@ test_instruction([]) :-
   test_phrase("read b45", instruction(iread("b45"))),
   test_phrase("return 45* 5", instruction(ireturn(op("*", +number(45), +number(5))))),
   test_phrase("call a23( 45, 5*6)", instruction(icall(p_call("a23", [+number(45), op("*", +number(5), +number(6))])))),
-  test_phrase("while not45>5 do read r4 done", instruction(while([[op(">", +variable("not45"), +number(5))]], [iread("r4")]))),
-  test_phrase("if not34>4 then read r4 else read re fi", instruction(ifelse([[op(">", +variable("not34"), +number(4))]], [iread("r4")], [iread("re")]))),
-  test_phrase("if not 34>4 then read r4 fi", instruction(if([[not(op(">", +number(34), +number(4)))]], [iread("r4")]))),
+  test_phrase("while not45>5 do read r4 done", instruction(while(or([and([op(">", +variable("not45"), +number(5))])]), [iread("r4")]))),
+  test_phrase("if not34>4 then read r4 else read re fi", instruction(ifelse(or([and([op(">", +variable("not34"), +number(4))])]), [iread("r4")], [iread("re")]))),
+  test_phrase("if not 34>4 then read r4 fi", instruction(if(or([and([not(op(">", +number(34), +number(4)))])]), [iread("r4")]))),
   test_phrase("awe := 3*4", instruction(assign("awe", op("*", +number(3), +number(4))))).
 test_instruction(["<<write45*5*6>> or <<readb45>> or <<return45*5*6>> or ... not parsed by instruction"]).
 
@@ -417,7 +422,7 @@ test_compound_instruction(["X is not parsed by compound_instruction"]).
 
 test_rel_expr([]) :-
   test_phrase("45*5 <> 5", rel_expr(op("<>",op("*", +number(45), +number(5)) ,+number(5)))),
-  test_phrase("(not 45 <> 5 and 45 > 6 or 45<> 7)", rel_expr([[not(op("<>",+number(45), +number(5))),op(">", +number(45), +number(6))],[op("<>", +number(45), +number(7))]])).
+  test_phrase("(not 45 <> 5 and 45 > 6 or 45<> 7)", rel_expr(or([and([not(op("<>",+number(45), +number(5))),op(">", +number(45), +number(6))]),and([op("<>", +number(45), +number(7))])]))).
 test_rel_expr(["45*5<>5 not parsed by rel_expr"]).
 
 test_condition([]) :-
@@ -426,11 +431,11 @@ test_condition([]) :-
 test_condition(["45*5<>5 or not45<>5 not parsed by condition"]).
 
 test_conjunction([]) :-
-  test_phrase("not 45 <>5 and 45 >6", conjunction([not(op("<>", +number(45), +number(5))), op(">", +number(45),+number(6))])).
+  test_phrase("not 45 <>5 and 45 >6", conjunction(and([not(op("<>", +number(45), +number(5))), op(">", +number(45),+number(6))]))).
 test_conjunction(["not45<>5and45>6 not parsed by conjunction"]).
 
 test_logical_expr([]) :-
-  test_phrase("not 45 <>5 and 45> 6 or not 5 > 4", logical_expr([[not(op("<>", +number(45), +number(5))), op(">", +number(45), +number(6))], [not(op(">", +number(5), +number(4)))]])).
+  test_phrase("not 45 <>5 and 45> 6 or not 5 > 4", logical_expr(or([and([not(op("<>", +number(45), +number(5))), op(">", +number(45), +number(6))]), and([not(op(">", +number(5), +number(4)))])]))).
 test_logical_expr(["not45<>5and45>6ornot5>4 not parsed by logical_expr"]).
 
 test_declaration([]) :-
