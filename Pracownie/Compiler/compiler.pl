@@ -1,5 +1,4 @@
 % vim: syntax=prolog
-% first of all we need to define parser for algol16
 
 % white spaces
 smt --> [_], smt.
@@ -166,7 +165,7 @@ parsing(String, Expr) :-
 eval(number(Arg), _, Arg).
 
 eval(variable(Var), Env, Arg) :- 
-  member((Var,Arg), Env).
+  !, member((Var,Arg), Env).
 % a co jezeli nie ma zdefiniowanej tej zmiennej?
 
 eval(-(Arg), Env, Val) :- 
@@ -177,16 +176,16 @@ eval(+(Arg), Env, Val) :-
 
 eval(op("*", Var1, Var2), Env, Val) :-
   eval(Var1, Env, Val1),
-  eval(Var2, Env, Val2),
+  eval(Var2, Env, Val2), !,
   Val is Val1 * Val2.
 
 eval(op("div", Var1, Var2), Env, Val) :-
   eval(Var1, Env, Val1),
-  eval(Var2, Env, Val2),
+  eval(Var2, Env, Val2), !,
   Val is Val1 div Val2.
 
 eval(op("mod", Var1, Var2), Env, Val) :-
-  eval(Var1, Env, Val1),
+  eval(Var1, Env, Val1), !,
   eval(Var2, Env, Val2),
   Val is Val1 mod Val2.
 
@@ -199,6 +198,44 @@ eval(op("-", Var1, Var2), Env, Val) :-
   eval(Var1, Env, Val1),
   eval(Var2, Env, Val2),
   Val is Val1 - Val2.
+
+eval(not(A), EnvIn, false) :- eval(A, EnvIn, B), B, !.
+eval(not(_), _, true).
+
+eval(op("<=", Var1, Var2), EnvIn, true) :-
+  eval(Var1, EnvIn, Val1),
+  eval(Var2, EnvIn, Val2),
+  Val1 =< Val2, !.
+eval(op("<=", _, _), _, false).
+eval(op(">=", Var1, Var2), EnvIn, true) :-
+  eval(Var1, EnvIn, Val1),
+  eval(Var2, EnvIn, Val2),
+  Val1 >= Val2, !.
+eval(op(">=", _, _), _, false).
+eval(op("<", Var1, Var2), EnvIn, true) :-
+  eval(Var1, EnvIn, Val1),
+  eval(Var2, EnvIn, Val2),
+  Val1 < Val2, !.
+eval(op("<", _,_), _, false).
+eval(op(">", Var1, Var2), EnvIn, true) :-
+  eval(Var1, EnvIn, Val1),
+  eval(Var2, EnvIn, Val2),
+  Val1 > Val2, !.
+eval(op(">", _, _), _, false).
+eval(op("<>", Var1, Var2), EnvIn, true) :-
+  eval(Var1, EnvIn, Val1),
+  eval(Var2, EnvIn, Val2),
+  Val1 \= Val2, !.
+eval(op("<>", _, _), _, false).
+
+eval([], _, true).
+eval([H|T], EnvIn, true) :- and(H, EnvIn, true);
+  eval_logic(T, EnvIn),!.
+
+and([], _, true).
+and([H|T], EnvIn, true) :-
+  eval(H, EnvIn),
+  and(T, EnvIn), !.
 
 puts(Var, Val, [(Var, _)| T], [(Var, Val)|T]).
 puts(Var, Val, EnvIn, [(Var,Val)|EnvIn]) :-
@@ -245,37 +282,9 @@ interpret([H|T], EnvIn, EnvOut) :-
   interpret(H, EnvIn, EnvOut1),
   interpret(T, EnvOut1, EnvOut).
 
-eval_logic([], _).
-eval_logic([H|T], EnvIn) :-
-  and(H, EnvIn);
-  eval_logic(T, EnvIn).
 
-and([], _).
-and([H|T], EnvIn) :-
-  eval_rel(H, EnvIn),
-  and(T, EnvIn).
 
-eval_rel(not(A), EnvIn) :- \+ eval_rel(A, EnvIn).
-eval_rel(op("<=", Var1, Var2), EnvIn) :-
-  eval(Var1, EnvIn, Val1),
-  eval(Var2, EnvIn, Val2),
-  Val1 =< Val2.
-eval_rel(op(">=", Var1, Var2), EnvIn) :-
-  eval(Var1, EnvIn, Val1),
-  eval(Var2, EnvIn, Val2),
-  Val1 >= Val2.
-eval_rel(op("<", Var1, Var2), EnvIn) :-
-  eval(Var1, EnvIn, Val1),
-  eval(Var2, EnvIn, Val2),
-  Val1 < Val2.
-eval_rel(op(">", Var1, Var2), EnvIn) :-
-  eval(Var1, EnvIn, Val1),
-  eval(Var2, EnvIn, Val2),
-  Val1 > Val2.
-eval_rel(op("<>", Var1, Var2), EnvIn) :-
-  eval(Var1, EnvIn, Val1),
-  eval(Var2, EnvIn, Val2),
-  Val1 \= Val2.
+
 
 
 
