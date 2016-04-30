@@ -162,80 +162,81 @@ parsing(String, Expr) :-
 
 
 % zrobic jeszcze dla procedure_call
-eval(number(Arg), _, Arg).
+eval(number(Arg), _, _, Arg).
 
-eval(variable(Var), Env, Arg) :- 
+eval(variable(Var), Env, _, Arg) :- 
   !, member((Var,Arg), Env).
-% a co jezeli nie ma zdefiniowanej tej zmiennej?
 
-eval(-(Arg), Env, Val) :- 
-  eval(Arg, Env, Val1), Val is (-1)*Val1.
+eval(-(Arg), EnvIn, EnvOut, Val) :- 
+  eval(Arg, Env, EnvOut, Val1),
+  Val is (-1)*Val1.
 
-eval(+(Arg), Env, Val) :-
-  eval(Arg, Env, Val).
+eval(+(Arg), Env, EnvOut, Val) :-
+  eval(Arg, Env, EnvOut, Val).
 
-eval(op("*", Var1, Var2), Env, Val) :-
-  eval(Var1, Env, Val1),
-  eval(Var2, Env, Val2), !,
+eval(op("*", Var1, Var2), Env, EnvOut, Val) :-
+  eval(Var1, Env, EnvOut1, Val1),
+  eval(Var2, EnvOut1, EnvOut, Val2), !,
   Val is Val1 * Val2.
 
-eval(op("div", Var1, Var2), Env, Val) :-
-  eval(Var1, Env, Val1),
-  eval(Var2, Env, Val2), !,
+eval(op("div", Var1, Var2), EnvIn, EnvOut, Val) :-
+  eval(Var1, EnvIn, EnvOut1, Val1),
+  eval(Var2, EnvOut1, EnvOut, Val2), !,
   Val is Val1 div Val2.
 
-eval(op("mod", Var1, Var2), Env, Val) :-
-  eval(Var1, Env, Val1), !,
-  eval(Var2, Env, Val2),
+eval(op("mod", Var1, Var2), EnvIn, EnvOut, Val) :-
+  eval(Var1, EnvIn, EnvOut1, Val1), !,
+  eval(Var2, EnvOut1, EnvOut, Val2),
   Val is Val1 mod Val2.
 
-eval(op("+", Var1, Var2), Env, Val) :-
-  !, eval(Var1, Env, Val1),
-  eval(Var2, Env, Val2),
+eval(op("+", Var1, Var2), EnvIn, EnvOut, Val) :-
+  !, eval(Var1, EnvIn, EnvOut1, Val1),
+  eval(Var2, EnvOut1, EnvOut, Val2),
   Val is Val1 + Val2.
 
-eval(op("-", Var1, Var2), Env, Val) :-
-  !, eval(Var1, Env, Val1),
-  eval(Var2, Env, Val2),
+eval(op("-", Var1, Var2), EnvIn, EnvOut, Val) :-
+  !, eval(Var1, EnvIn, EnvOut1, Val1),
+  eval(Var2, EnvOut1, EnvOut, Val2),
   Val is Val1 - Val2.
 
-eval(not(A), EnvIn, false) :- eval(A, EnvIn, B), B, !.
-eval(not(_), _, true) :- !.
+eval(not(A), EnvIn, EnvOut, false) :- 
+  eval(A, EnvIn, EnvOut, B), B, !.
+eval(not(_), _, _, true) :- !.
 
-eval(op("<=", Var1, Var2), EnvIn, X) :-
-  eval(Var1, EnvIn, Val1),
-  eval(Var2, EnvIn, Val2),
-  (Val1 <= Val2, !, X = true; X = false).
-eval(op(">=", Var1, Var2), EnvIn, X) :-
-  eval(Var1, EnvIn, Val1),
-  eval(Var2, EnvIn, Val2),
+eval(op("<=", Var1, Var2), EnvIn, EnvOut, X) :-
+  eval(Var1, EnvIn, EnvOut1, Val1),
+  eval(Var2, EnvOut1, EnvOut, Val2),
+  (Val1 =< Val2, !, X = true; X = false).
+eval(op(">=", Var1, Var2), EnvIn, EnvOut, X) :-
+  eval(Var1, EnvIn, EnvOut1, Val1),
+  eval(Var2, EnvOut1, EnvOut, Val2),
   (Val1 >= Val2, !, X = true; X = false).
-eval(op("<", Var1, Var2), EnvIn, X) :-
-  eval(Var1, EnvIn, Val1),
-  eval(Var2, EnvIn, Val2),
+eval(op("<", Var1, Var2), EnvIn, EnvOut, X) :-
+  eval(Var1, EnvIn, EnvOut1, Val1),
+  eval(Var2, EnvOut1, EnvOut, Val2),
   (Val1 < Val2, !, X = true; X = false).
-eval(op(">", Var1, Var2), EnvIn, X) :-
-  eval(Var1, EnvIn, Val1),
-  eval(Var2, EnvIn, Val2),
+eval(op(">", Var1, Var2), EnvIn, EnvOut, X) :-
+  eval(Var1, EnvIn, EnvOut1, Val1),
+  eval(Var2, EnvOut1, EnvOut, Val2),
   (Val1 > Val2, !, X = true; X = false).
-eval(op("<>", Var1, Var2), EnvIn, X) :-
-  eval(Var1, EnvIn, Val1),
-  eval(Var2, EnvIn, Val2),
+eval(op("<>", Var1, Var2), EnvIn, EnvOut, X) :-
+  eval(Var1, EnvIn, EnvOut1, Val1),
+  eval(Var2, EnvOut1, EnvOut, Val2),
   (Val1 \= Val2, !, X = true; X = false).
 
-eval(or([]), _, false) :- !.
-eval(or([H|_]), EnvIn, true) :-
-  eval(H, EnvIn, Y),
+eval(or([]), _, _, false) :- !.
+eval(or([H|_]), EnvIn, EnvOut, true) :-
+  eval(H, EnvIn, EnvOut, Y),
   Y, !.
-eval(or([_|T]), EnvIn, X) :- 
-  eval(or(T), EnvIn, X).
+eval(or([_|T]), EnvIn, EnvOut, X) :- 
+  eval(or(T), EnvIn, EnvOut, X).
 
-eval(and([]), _, true) :- !.
-eval(and([H|_]), EnvIn, false) :-
-  eval(H, EnvIn, Y),
+eval(and([]), _, _, true) :- !.
+eval(and([H|_]), EnvIn, EnvOut, false) :-
+  eval(H, EnvIn, EnvOut, Y),
   \+ Y, !.
-eval(and([_|T]), EnvIn, X) :-
-  eval(and(T), EnvIn, X).
+eval(and([_|T]), EnvIn, EnvOut, X) :-
+  eval(and(T), EnvIn, EnvOut, X).
 
 puts(Var, Val, [(Var, _)| T], [(Var, Val)|T]).
 puts(Var, Val, EnvIn, [(Var,Val)|EnvIn]) :-
