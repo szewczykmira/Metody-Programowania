@@ -277,20 +277,16 @@ interpret([H|T], EnvIn, EnvOut) :-
   interpret(H, EnvIn, EnvOut1),
   interpret(T, EnvOut1, EnvOut).
 
+interpret(declarations([]), EnvIn, EnvIn) :-!.
 interpret(declarations([H|T]), EnvIn, EnvOut) :-
-  interpret(H, EnvIn, EnvOut1),
+  interpret(H, EnvIn, EnvOut1),!,
   interpret(declarations(T), EnvOut1, EnvOut).
 
-interpret(local([]), EnvIn, EnvIn) :-!.
+interpret(local([]), EnvIn, EnvIn):-!.
 interpret(local([H|T]), EnvIn, EnvOut):-
-  puts(local, H, 0, EnvIn, EnvOut1),!,
-  interpret(local(T), EnvOut1, EnvOut).
+  interpret(local(T), [(local, H, 0) | EnvIn], EnvOut).
 
-puts(Id, Var, Val, [(_, Var, _)| T], [(Id, Var, Val)|T]).
-puts(Id, Var, Val, EnvIn, [(Id, Var,Val)|EnvIn]) :-
-  \+member((_, Var, _), EnvIn).
-puts(Id, Var, Val, [_|T], EnvOut) :-
-  puts(Id, Var, Val, T, EnvOut).
+interpret(procedure(Id, FA, B), EnvIn, [(proc, Id, FA, B) | EnvIn]).
 
 
 
