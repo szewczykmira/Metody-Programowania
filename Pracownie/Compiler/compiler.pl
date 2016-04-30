@@ -156,28 +156,37 @@ program(program(Id, B)) --> "program", white_space, identifier(Id), white_space,
 
 % ===== INTERPRETER ==========
 
-parsing(String, Expr) :- 
+parsing(String, Expr) :-
   atom_codes(String, List),
   phrase(program(Expr), List).
 
-parse_args([], [], EnvIn, EnvIn).
+parse_args([], [], EnvIn, [eof | EnvIn]).
 parse_args([value(Fh)|Ft], [Rh|Rt], EnvIn, EnvOut) :-
   parse_args(Ft, Rt, EnvIn, EnvOut1), !,
-  append([(value, Fh, Rh)], EnvOut1, EnvOut).
+  eval(Rh, EnvOut1, EnvOut2, Val),
+  append([(value, Fh, Val)], EnvOut2, EnvOut).
 parse_args([name(Fh)|Ft], [Rh|Rt], EnvIn, EnvOut) :-
-  parse_args(Ft, Rt, EnvIn, EnvOut1), !,
-  append([(name, Fh, Rh)], EnvOut1, EnvOut).
+  parse_args(Ft, Rt, EnvIn, EnvOut), !,
+  print("Not handling call-by-name").
 
-eval(procedure_call(Id, Ra), EnvIn, EnvOut, _) :-
-  member((procedure, Id, Fa, _), EnvIn),
-  parse_args(Fa, Ra, EnvIn, EnvOut).
+:- dynamic(returns/2).
+eval(procedure_call(Id, Ra), EnvIn, RealEnvOut, Val) :-
+  member((procedure, Id, Fa, B), EnvIn),
+  parse_args(Fa, Ra, EnvIn, EnvOut1),
+  ( (interpret(B, EnvOut1, EnvOut), Val = 0)
+  ; (returns(EnvOut, Val), !, retractall(returns(_, _)))),
+  retract_local_args(EnvOut, RealEnvOut).
 
-eval(number(Arg), _, _, Arg).
+retract_local_args([eof | EnvOut], EnvOut) :- !.
+retract_local_args([_ | EnvOut1], EnvOut) :-
+  retract_local_args(EnvOut1, EnvOut).
 
-eval(variable(Var), Env, _, Arg) :- 
-  !, member((Var,Arg), Env).
+eval(number(Arg), B, B, Arg).
 
-eval(-(Arg), EnvIn, EnvOut, Val) :- 
+eval(variable(Var), Env, Env, Arg) :-
+  !, member((_,Var,Arg), Env).
+
+eval(-(Arg), EnvIn, EnvOut, Val) :-
   eval(Arg, EnvIn, EnvOut, Val1),
   Val is (-1)*Val1.
 
@@ -209,36 +218,38 @@ eval(op("-", Var1, Var2), EnvIn, EnvOut, Val) :-
   eval(Var2, EnvOut1, EnvOut, Val2),
   Val is Val1 - Val2.
 
-eval(not(A), EnvIn, EnvOut, false) :- 
+eval(not(A), EnvIn, EnvOut, false) :-
   eval(A, EnvIn, EnvOut, B), B, !.
+% TODO: fix, use reify
+% reify(X, V) :- (X, !, V = true) ; (V = false).
 eval(not(_), _, _, true) :- !.
 
 eval(op("<=", Var1, Var2), EnvIn, EnvOut, X) :-
   eval(Var1, EnvIn, EnvOut1, Val1),
   eval(Var2, EnvOut1, EnvOut, Val2),
-  (Val1 =< Val2, !, X = true; X = false).
+  (Val1 =< Val2, !, X = true; X = false), !.
 eval(op(">=", Var1, Var2), EnvIn, EnvOut, X) :-
   eval(Var1, EnvIn, EnvOut1, Val1),
   eval(Var2, EnvOut1, EnvOut, Val2),
-  (Val1 >= Val2, !, X = true; X = false).
+  (Val1 >= Val2, !, X = true; X = false),!.
 eval(op("<", Var1, Var2), EnvIn, EnvOut, X) :-
   eval(Var1, EnvIn, EnvOut1, Val1),
   eval(Var2, EnvOut1, EnvOut, Val2),
-  (Val1 < Val2, !, X = true; X = false).
+  (Val1 < Val2, !, X = true; X = false), !.
 eval(op(">", Var1, Var2), EnvIn, EnvOut, X) :-
   eval(Var1, EnvIn, EnvOut1, Val1),
   eval(Var2, EnvOut1, EnvOut, Val2),
-  (Val1 > Val2, !, X = true; X = false).
+  (Val1 > Val2, !, X = true; X = false),!.
 eval(op("<>", Var1, Var2), EnvIn, EnvOut, X) :-
   eval(Var1, EnvIn, EnvOut1, Val1),
   eval(Var2, EnvOut1, EnvOut, Val2),
-  (Val1 \= Val2, !, X = true; X = false).
+  (Val1 \= Val2, !, X = true; X = false),!.
 
 eval(or([]), _, _, false) :- !.
 eval(or([H|_]), EnvIn, EnvOut, true) :-
   eval(H, EnvIn, EnvOut, Y),
   Y, !.
-eval(or([_|T]), EnvIn, EnvOut, X) :- 
+eval(or([_|T]), EnvIn, EnvOut, X) :-
   eval(or(T), EnvIn, EnvOut, X).
 
 eval(and([]), _, _, true) :- !.
@@ -248,47 +259,53 @@ eval(and([H|_]), EnvIn, EnvOut, false) :-
 eval(and([_|T]), EnvIn, EnvOut, X) :-
   eval(and(T), EnvIn, EnvOut, X).
 
+puts(_, _, [], _) :- print("Not in scope."), abort.
 puts(Arg, X, [(I, Arg, _) | T], [(I, Arg, X) |T]) :- !.
 puts(Arg, X, [H|T], [H|EnvOut]) :-
   puts(Arg, X, T, EnvOut).
 
-interpret(iwrite(Arg), Envin, Envout) :-
-  eval(Arg, Envin, Envout, Val),
+interpret(iwrite(Arg), EnvIn, EnvOut) :-
+  eval(Arg, EnvIn, EnvOut, Val),
   print(Val).
 
-interpret(iread(Arg), Envin, Envout) :- 
+interpret(iread(Arg), EnvIn, EnvOut) :-
   read(X),
-  puts(Arg, X, Envin, Envout). 
+  puts(Arg, X, EnvIn, EnvOut).
 
 % totalnie nie mam pomyslu co to moze robic
-%interpret(ireturn(Arg), EnvIn, EnvOut) :- eval(Arg, EnvIn, Val).
+interpret(ireturn(Arg), EnvIn, _) :-
+  eval(Arg, EnvIn, EnvOut, Val),
+  assert(returns(EnvOut, Val)),
+  fail.
+
 interpret(icall(A), EnvIn, EnvOut) :-
   eval(A, EnvIn, EnvOut, EnvOut).
 
 interpret(while(Logic, Compound), EnvIn, EnvOut) :-
-  eval(Logic, EnvIn, _, Val),
-  Val, !,
-  interpret(Compound, EnvIn, EnvOut1), 
-  interpret(while(Logic, Compound), EnvOut1, EnvOut).
-interpret(while(_,_), _, _).
+  eval(Logic, EnvIn, EnvOut1, Val),
+  Val,
+  interpret(Compound, EnvOut1, EnvOut2),
+  interpret(while(Logic, Compound), EnvOut2, EnvOut).
+interpret(while(_,_), A, A).
 
 interpret(ifelse(Logic,If,_), EnvIn, EnvOut) :-
-  eval(Logic, EnvIn, _, Val),
-  Val, !, 
-  interpret(If, EnvIn, EnvOut).
-interpret(ifelse(_, _, Else), EnvIn, EnvOut) :- 
+  eval(Logic, EnvIn, EnvOut1, Val),
+  Val, !,
+  interpret(If, EnvOut1, EnvOut).
+interpret(ifelse(_, _, Else), EnvIn, EnvOut) :-
   interpret(Else, EnvIn, EnvOut).
 
 interpret(if(Logic,If), EnvIn, EnvOut) :-
-  eval(Logic, EnvIn, _, Val), !, 
-  interpret(If, EnvIn, EnvOut).
-interpret(if(_, _), _, _).
+  eval(Logic, EnvIn, EnvOut1, Val),
+  Val, !,
+  interpret(If, EnvOut1, EnvOut).
+interpret(if(_, _), A, A).
 
-interpret(assing(Var, Val), EnvIn, EnvOut) :- 
+interpret(assign(Var, Val), EnvIn, EnvOut) :-
   puts(Var, Val, EnvIn, EnvOut).
 
 interpret([], EnvIn, EnvIn):-!.
-interpret([H|T], EnvIn, EnvOut) :- 
+interpret([H|T], EnvIn, EnvOut) :-
   interpret(H, EnvIn, EnvOut1),
   interpret(T, EnvOut1, EnvOut).
 
@@ -323,55 +340,55 @@ interpret(program(_, B), EnvIn, EnvOut) :-
 
 % ====== TESTING ===========
 
-test_phrase(String, Pred) :- 
+test_phrase(String, Pred) :-
   atom_codes(String, Codes), phrase(Pred, Codes).
 
-test_identifier([]) :- 
+test_identifier([]) :-
   test_phrase("a111", identifier("a111")).
 test_identifier(["a111 not parsed by identifer"]).
 
-test_digit([]) :- 
+test_digit([]) :-
   test_phrase("9", digit(57)).
 test_digit(["9 not parsed by digit"]).
 
-test_digits([]) :- 
+test_digits([]) :-
   test_phrase("987", digits([57,56,55])).
 test_digits(["987 not parsed by digits"]).
 
-test_variable([]) :- 
+test_variable([]) :-
   test_phrase("a112", variable("a112")).
 test_variable(["a112 not parsed by variable"]).
 
-test_variables([]) :- 
-  test_phrase("a112", variables(["a112"])), 
+test_variables([]) :-
+  test_phrase("a112", variables(["a112"])),
   test_phrase("a112, aa", variables(["a112", "aa"])).
 test_variables(["a112 or a112,aa not parsed by variables"]).
 
-test_formal_arg([]) :- 
-  test_phrase("a112", formal_arg(name("a112"))), 
+test_formal_arg([]) :-
+  test_phrase("a112", formal_arg(name("a112"))),
   test_phrase("value a112", formal_arg(value("a112"))).
 test_formal_arg(["a112 or valuea112 not parsed by formal_arg"]).
 
-test_formal_arg_str([]) :- 
-  test_phrase("aqwer", formal_arg_str([name("aqwer")])), 
-  test_phrase("awer, wet3", formal_arg_str([name("awer"), name("wet3")])), 
+test_formal_arg_str([]) :-
+  test_phrase("aqwer", formal_arg_str([name("aqwer")])),
+  test_phrase("awer, wet3", formal_arg_str([name("awer"), name("wet3")])),
   test_phrase("awe, value we2", formal_arg_str([name("awe"), value("we2")])).
 test_formal_arg_str(["aqwer, <<awer,wet3>> and <<awe,valuewe2>> not parsed by formal_arg_str"]).
 
-test_formal_args([]) :- 
+test_formal_args([]) :-
   test_phrase("",formal_args([])),
   test_phrase("awe, value we2", formal_args([name("awe"), value("we2")])).
 test_formal_args(["empty and awe,valuewe2 not parsed by formal_args"]).
 
-test_proc_name([]) :- 
+test_proc_name([]) :-
   test_phrase("a112", proc_name("a112")).
 test_proc_name(["a112 not parsed by proc_name"]).
 
-test_declarator([]) :- 
+test_declarator([]) :-
   test_phrase("local a112", declarator(local(["a112"]))).
 test_declarator(["locala112 not parsed by delarator"]).
 
-test_atom_expr([]) :- 
+test_atom_expr([]) :-
   test_phrase("45", atom_expr(number(45))),
   test_phrase("a45", atom_expr(variable("a45"))).
 test_atom_expr(["45 and a45 not parsed by atom expression"]).
@@ -468,8 +485,8 @@ test_program([]) :-
 test_program(["X not parsed by program"]).
 
 test_all([]).
-test_all([H | T]) :- 
-  call(H, E), (E = [] ; print(E)), 
+test_all([H | T]) :-
+  call(H, E), (E = [] ; print(E)),
   test_all(T).
 
 :- test_all([
