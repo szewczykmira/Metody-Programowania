@@ -160,15 +160,23 @@ parsing(String, Expr) :-
   atom_codes(String, List),
   phrase(program(Expr), List).
 
+% puts real args for procedure in env
+parse_args([], [], EnvIn, EnvIn).
+parse_args([value(Fh)|Ft], [Rh|Rt], EnvIn, EnvOut) :-
+  parse_args(Ft, Rt, EnvIn, EnvOut1),
+  append([(value, Fh, Rh)], EnvOut1, EnvOut).
 
-% zrobic jeszcze dla procedure_call
+eval(procedure_call(Id, Ra), EnvIn, EnvOut, _) :-
+  member((procedure, Id, Fa, _), EnvIn),
+  parse_args(Fa, Ra, EnvIn, EnvOut).
+
 eval(number(Arg), _, _, Arg).
 
 eval(variable(Var), Env, _, Arg) :- 
   !, member((Var,Arg), Env).
 
 eval(-(Arg), EnvIn, EnvOut, Val) :- 
-  eval(Arg, Env, EnvOut, Val1),
+  eval(Arg, EnvIn, EnvOut, Val1),
   Val is (-1)*Val1.
 
 eval(+(Arg), Env, EnvOut, Val) :-
