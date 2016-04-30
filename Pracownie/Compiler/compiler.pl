@@ -145,8 +145,8 @@ declaration(A) --> procedure(A).
 % declarations
 declarations_acc([H|T]) --> declaration(H), white_space, declarations_acc(T).
 declarations_acc([H]) --> declaration(H).
-declarations(A) --> declarations_acc(A), !.
-declarations([]) --> [].
+declarations(declarations(A)) --> declarations_acc(A), !.
+declarations(declarations([])) --> [].
 
 % block
 block(block(A,I)) --> declarations(A), white_space, "begin", white_space, compound_instruction(I), white_space, "end".
@@ -238,11 +238,6 @@ eval(and([H|_]), EnvIn, EnvOut, false) :-
 eval(and([_|T]), EnvIn, EnvOut, X) :-
   eval(and(T), EnvIn, EnvOut, X).
 
-puts(Var, Val, [(Var, _)| T], [(Var, Val)|T]).
-puts(Var, Val, EnvIn, [(Var,Val)|EnvIn]) :-
-  \+member((Var, _), EnvIn).
-puts(Var, Val, [_|T], EnvOut) :-
-  puts(Var, Val, T, EnvOut).
 
 interpret(iwrite(Arg), EnvIn, _) :-
   eval(Arg, EnvIn, Val),
@@ -282,6 +277,20 @@ interpret([H|T], EnvIn, EnvOut) :-
   interpret(H, EnvIn, EnvOut1),
   interpret(T, EnvOut1, EnvOut).
 
+interpret(declarations([H|T]), EnvIn, EnvOut) :-
+  interpret(H, EnvIn, EnvOut1),
+  interpret(declarations(T), EnvOut1, EnvOut).
+
+interpret(local([]), EnvIn, EnvIn) :-!.
+interpret(local([H|T]), EnvIn, EnvOut):-
+  puts(local, H, 0, EnvIn, EnvOut1),!,
+  interpret(local(T), EnvOut1, EnvOut).
+
+puts(Id, Var, Val, [(_, Var, _)| T], [(Id, Var, Val)|T]).
+puts(Id, Var, Val, EnvIn, [(Id, Var,Val)|EnvIn]) :-
+  \+member((_, Var, _), EnvIn).
+puts(Id, Var, Val, [_|T], EnvOut) :-
+  puts(Id, Var, Val, T, EnvOut).
 
 
 
@@ -289,17 +298,6 @@ interpret([H|T], EnvIn, EnvOut) :-
 
 
 
-
-
-
-
-
-
-
-test_eval(Expr, Env, Val) :- 
-  atom_codes(Expr, Atom),
-  phrase(arithmetic_expr(Sm), Atom),
-  eval(Sm, Env, Val).
 
 
 
