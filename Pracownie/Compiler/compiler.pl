@@ -248,34 +248,39 @@ eval(and([H|_]), EnvIn, EnvOut, false) :-
 eval(and([_|T]), EnvIn, EnvOut, X) :-
   eval(and(T), EnvIn, EnvOut, X).
 
+puts(Arg, X, [(I, Arg, _) | T], [(I, Arg, X) |T]) :- !.
+puts(Arg, X, [H|T], [H|EnvOut]) :-
+  puts(Arg, X, T, EnvOut).
 
-interpret(iwrite(Arg), EnvIn, _) :-
-  eval(Arg, EnvIn, Val),
-  print(Val).
+interpret(iwrite(arg), envin, envout) :-
+  eval(arg, envin, envout, val),
+  print(val).
 
-interpret(iread(Arg), EnvIn, EnvOut) :- 
-  read(X),
-  puts(Arg, X, EnvIn, EnvOut). 
+interpret(iread(arg), envin, envout) :- 
+  read(x),
+  puts(arg, x, envin, envout). 
 
 % totalnie nie mam pomyslu co to moze robic
 %interpret(ireturn(Arg), EnvIn, EnvOut) :- eval(Arg, EnvIn, Val).
 interpret(icall(A), EnvIn, EnvOut) :-
-  eval(A, EnvIn, EnvOut, _).
+  eval(A, EnvIn, EnvOut, EnvOut).
 
 interpret(while(Logic, Compound), EnvIn, EnvOut) :-
-  eval_logic(Logic),!,
+  eval(Logic, EnvIn, _, Val),
+  Val, !,
   interpret(Compound, EnvIn, EnvOut1), 
   interpret(while(Logic, Compound), EnvOut1, EnvOut).
 interpret(while(_,_), _, _).
 
 interpret(ifelse(Logic,If,_), EnvIn, EnvOut) :-
-  eval_logic(Logic), !, 
+  eval(Logic, EnvIn, _, Val),
+  Val, !, 
   interpret(If, EnvIn, EnvOut).
 interpret(ifelse(_, _, Else), EnvIn, EnvOut) :- 
   interpret(Else, EnvIn, EnvOut).
 
 interpret(if(Logic,If), EnvIn, EnvOut) :-
-  eval_logic(Logic), !, 
+  eval(Logic, EnvIn, _, Val), !, 
   interpret(If, EnvIn, EnvOut).
 interpret(if(_, _), _, _).
 
@@ -298,7 +303,12 @@ interpret(local([H|T]), EnvIn, EnvOut):-
 
 interpret(procedure(Id, FA, B), EnvIn, [(proc, Id, FA, B) | EnvIn]).
 
+interpret(block(Dec, Ci), EnvIn, EnvOut) :-
+  interpret(Dec, EnvIn, EnvOut1),
+  interpret(Ci, EnvOut1, EnvOut).
 
+interpret(program(_, B), EnvIn, EnvOut) :-
+  interpret(B, EnvIn, EnvOut).
 
 
 
