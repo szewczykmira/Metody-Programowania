@@ -202,31 +202,26 @@ eval(op("-", Var1, Var2), Env, Val) :-
 eval(not(A), EnvIn, false) :- eval(A, EnvIn, B), B, !.
 eval(not(_), _, true) :- !.
 
-eval(op("<=", Var1, Var2), EnvIn, true) :-
+eval(op("<=", Var1, Var2), EnvIn, X) :-
   eval(Var1, EnvIn, Val1),
   eval(Var2, EnvIn, Val2),
-  Val1 =< Val2, !.
-eval(op("<=", _, _), _, false).
-eval(op(">=", Var1, Var2), EnvIn, true) :-
+  (Val1 <= Val2, !, X = true; X = false).
+eval(op(">=", Var1, Var2), EnvIn, X) :-
   eval(Var1, EnvIn, Val1),
   eval(Var2, EnvIn, Val2),
-  Val1 >= Val2, !.
-eval(op(">=", _, _), _, false).
-eval(op("<", Var1, Var2), EnvIn, true) :-
+  (Val1 >= Val2, !, X = true; X = false).
+eval(op("<", Var1, Var2), EnvIn, X) :-
   eval(Var1, EnvIn, Val1),
   eval(Var2, EnvIn, Val2),
-  Val1 < Val2, !.
-eval(op("<", _,_), _, false).
-eval(op(">", Var1, Var2), EnvIn, true) :-
+  (Val1 < Val2, !, X = true; X = false).
+eval(op(">", Var1, Var2), EnvIn, X) :-
   eval(Var1, EnvIn, Val1),
   eval(Var2, EnvIn, Val2),
-  Val1 > Val2, !.
-eval(op(">", _, _), _, false).
-eval(op("<>", Var1, Var2), EnvIn, true) :-
+  (Val1 > Val2, !, X = true; X = false).
+eval(op("<>", Var1, Var2), EnvIn, X) :-
   eval(Var1, EnvIn, Val1),
   eval(Var2, EnvIn, Val2),
-  Val1 \= Val2, !.
-eval(op("<>", _, _), _, false).
+  (Val1 \= Val2, !, X = true; X = false).
 
 eval(or([]), _, false) :- !.
 eval(or([H|_]), EnvIn, true) :-
@@ -257,10 +252,9 @@ interpret(iread(Arg), EnvIn, EnvOut) :-
   puts(Arg, X, EnvIn, EnvOut). 
 
 % totalnie nie mam pomyslu co to moze robic
-interpret(ireturn(Arg), EnvIn, EnvOut) :- eval(Arg, EnvIn, Val).
-% w sumie tutaj tak samo
+%interpret(ireturn(Arg), EnvIn, EnvOut) :- eval(Arg, EnvIn, Val).
 interpret(icall(A), EnvIn, EnvOut) :-
-  eval(A, EnvIn, EnvOut).
+  eval(A, EnvIn, EnvOut, _).
 
 interpret(while(Logic, Compound), EnvIn, EnvOut) :-
   eval_logic(Logic),!,
