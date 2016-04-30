@@ -252,13 +252,13 @@ puts(Arg, X, [(I, Arg, _) | T], [(I, Arg, X) |T]) :- !.
 puts(Arg, X, [H|T], [H|EnvOut]) :-
   puts(Arg, X, T, EnvOut).
 
-interpret(iwrite(arg), envin, envout) :-
-  eval(arg, envin, envout, val),
-  print(val).
+interpret(iwrite(Arg), Envin, Envout) :-
+  eval(Arg, Envin, Envout, Val),
+  print(Val).
 
-interpret(iread(arg), envin, envout) :- 
-  read(x),
-  puts(arg, x, envin, envout). 
+interpret(iread(Arg), Envin, Envout) :- 
+  read(X),
+  puts(Arg, X, Envin, Envout). 
 
 % totalnie nie mam pomyslu co to moze robic
 %interpret(ireturn(Arg), EnvIn, EnvOut) :- eval(Arg, EnvIn, Val).
