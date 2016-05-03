@@ -160,14 +160,20 @@ parsing(String, Expr) :-
   atom_codes(String, List),
   phrase(program(Expr), List).
 
+reify(Proc, Val) :- (Proc, !, Val=true) ; (Val=false).
+
 parse_args([], [], EnvIn, [eof | EnvIn]).
 parse_args([value(Fh)|Ft], [Rh|Rt], EnvIn, EnvOut) :-
   parse_args(Ft, Rt, EnvIn, EnvOut1), !,
   eval(Rh, EnvOut1, EnvOut2, Val),
   append([(value, Fh, Val)], EnvOut2, EnvOut).
-parse_args([name(Fh)|Ft], [Rh|Rt], EnvIn, EnvOut) :-
+parse_args([name(_)|Ft], [_|Rt], EnvIn, EnvOut) :-
   parse_args(Ft, Rt, EnvIn, EnvOut), !,
   print("Not handling call-by-name").
+
+retract_local_args([eof | EnvOut], EnvOut) :- !.
+retract_local_args([_ | EnvOut1], EnvOut) :-
+  retract_local_args(EnvOut1, EnvOut).
 
 :- dynamic(returns/2).
 eval(procedure_call(Id, Ra), EnvIn, RealEnvOut, Val) :-
@@ -176,10 +182,6 @@ eval(procedure_call(Id, Ra), EnvIn, RealEnvOut, Val) :-
   ( (interpret(B, EnvOut1, EnvOut), Val = 0)
   ; (returns(EnvOut, Val), !, retractall(returns(_, _)))),
   retract_local_args(EnvOut, RealEnvOut).
-
-retract_local_args([eof | EnvOut], EnvOut) :- !.
-retract_local_args([_ | EnvOut1], EnvOut) :-
-  retract_local_args(EnvOut1, EnvOut).
 
 eval(number(Arg), B, B, Arg).
 
@@ -218,32 +220,34 @@ eval(op("-", Var1, Var2), EnvIn, EnvOut, Val) :-
   eval(Var2, EnvOut1, EnvOut, Val2),
   Val is Val1 - Val2.
 
-eval(not(A), EnvIn, EnvOut, false) :-
-  eval(A, EnvIn, EnvOut, B), B, !.
-% TODO: fix, use reify
-% reify(X, V) :- (X, !, V = true) ; (V = false).
-eval(not(_), _, _, true) :- !.
+eval(not(A), EnvIn, EnvOut, Val) :-
+  eval(A, EnvIn, EnvOut, B), !, reify(\+ B, Val).
 
 eval(op("<=", Var1, Var2), EnvIn, EnvOut, X) :-
   eval(Var1, EnvIn, EnvOut1, Val1),
   eval(Var2, EnvOut1, EnvOut, Val2),
-  (Val1 =< Val2, !, X = true; X = false), !.
+  reify(Val1 =< Val2, X), !.
+
 eval(op(">=", Var1, Var2), EnvIn, EnvOut, X) :-
   eval(Var1, EnvIn, EnvOut1, Val1),
   eval(Var2, EnvOut1, EnvOut, Val2),
-  (Val1 >= Val2, !, X = true; X = false),!.
+  reify(Val1 >= Val2, X), !.
+
 eval(op("<", Var1, Var2), EnvIn, EnvOut, X) :-
   eval(Var1, EnvIn, EnvOut1, Val1),
   eval(Var2, EnvOut1, EnvOut, Val2),
-  (Val1 < Val2, !, X = true; X = false), !.
+  reify(Val1 < Val2, X), !.
+
 eval(op(">", Var1, Var2), EnvIn, EnvOut, X) :-
   eval(Var1, EnvIn, EnvOut1, Val1),
   eval(Var2, EnvOut1, EnvOut, Val2),
-  (Val1 > Val2, !, X = true; X = false),!.
+  reify(Val1 > Val2, X), !.
+
 eval(op("<>", Var1, Var2), EnvIn, EnvOut, X) :-
   eval(Var1, EnvIn, EnvOut1, Val1),
   eval(Var2, EnvOut1, EnvOut, Val2),
-  (Val1 \= Val2, !, X = true; X = false),!.
+  reify(Val1 \= Val2, X),!.
+
 
 eval(or([]), _, _, false) :- !.
 eval(or([H|_]), EnvIn, EnvOut, true) :-
