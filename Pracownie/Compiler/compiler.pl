@@ -149,16 +149,18 @@ declarations(declarations(A)) --> declarations_acc(A), !.
 declarations(declarations([])) --> [].
 
 % block
-block(block(A,I)) --> declarations(A), white_space, "begin", white_space, compound_instruction(I), white_space, "end".
+block(block(A,I)) --> declarations(A), white_space, !, "begin", white_space, compound_instruction(I), white_space, "end".
+block(block([], I)) --> "begin", white_space, compound_instruction(I), white_space, "end".
 
 % program
 program(program(Id, B)) --> "program", white_space, identifier(Id), white_space, block(B).
 
 % ===== INTERPRETER ==========
 
-parsing(String, Expr) :-
+parsing(String) :-
   atom_codes(String, List),
-  phrase(program(Expr), List).
+  phrase(program(Expr), List),
+  interpret(Expr, [], _).
 
 reify(Proc, Val) :- (Proc, !, Val=true) ; (Val=false).
 
@@ -169,18 +171,19 @@ parse_args([value(Fh)|Ft], [Rh|Rt], EnvIn, EnvOut) :-
   append([(value, Fh, Val)], EnvOut2, EnvOut).
 parse_args([name(_)|Ft], [_|Rt], EnvIn, EnvOut) :-
   parse_args(Ft, Rt, EnvIn, EnvOut), !,
-  print("Not handling call-by-name").
+  print("Not handling call-by-name"),
+  abort.
 
 retract_local_args([eof | EnvOut], EnvOut) :- !.
 retract_local_args([_ | EnvOut1], EnvOut) :-
   retract_local_args(EnvOut1, EnvOut).
 
 :- dynamic(returns/2).
-eval(procedure_call(Id, Ra), EnvIn, RealEnvOut, Val) :-
+eval(p_call(Id, Ra), EnvIn, RealEnvOut, Val) :-
   member((procedure, Id, Fa, B), EnvIn),
   parse_args(Fa, Ra, EnvIn, EnvOut1),
   ( (interpret(B, EnvOut1, EnvOut), Val = 0)
-  ; (returns(EnvOut, Val), !, retractall(returns(_, _)))),
+  ; (returns(EnvOut, Val), !, retractall(returns(_, _)))),!,
   retract_local_args(EnvOut, RealEnvOut).
 
 eval(number(Arg), B, B, Arg).
@@ -249,14 +252,14 @@ eval(op("<>", Var1, Var2), EnvIn, EnvOut, X) :-
   reify(Val1 \= Val2, X),!.
 
 
-eval(or([]), _, _, false) :- !.
+eval(or([]), Env, Env, false) :- !.
 eval(or([H|_]), EnvIn, EnvOut, true) :-
   eval(H, EnvIn, EnvOut, Y),
   Y, !.
 eval(or([_|T]), EnvIn, EnvOut, X) :-
   eval(or(T), EnvIn, EnvOut, X).
 
-eval(and([]), _, _, true) :- !.
+eval(and([]), Env, Env, true) :- !.
 eval(and([H|_]), EnvIn, EnvOut, false) :-
   eval(H, EnvIn, EnvOut, Y),
   \+ Y, !.
@@ -269,21 +272,20 @@ puts(Arg, X, [H|T], [H|EnvOut]) :-
   puts(Arg, X, T, EnvOut).
 
 interpret(iwrite(Arg), EnvIn, EnvOut) :-
-  eval(Arg, EnvIn, EnvOut, Val),
+  eval(Arg, EnvIn, EnvOut, Val), nl,
   print(Val).
 
 interpret(iread(Arg), EnvIn, EnvOut) :-
   read(X),
   puts(Arg, X, EnvIn, EnvOut).
 
-% totalnie nie mam pomyslu co to moze robic
 interpret(ireturn(Arg), EnvIn, _) :-
   eval(Arg, EnvIn, EnvOut, Val),
   assert(returns(EnvOut, Val)),
   fail.
 
 interpret(icall(A), EnvIn, EnvOut) :-
-  eval(A, EnvIn, EnvOut, EnvOut).
+  eval(A, EnvIn, EnvOut, _).
 
 interpret(while(Logic, Compound), EnvIn, EnvOut) :-
   eval(Logic, EnvIn, EnvOut1, Val),
@@ -306,7 +308,8 @@ interpret(if(Logic,If), EnvIn, EnvOut) :-
 interpret(if(_, _), A, A).
 
 interpret(assign(Var, Val), EnvIn, EnvOut) :-
-  puts(Var, Val, EnvIn, EnvOut).
+  eval(Val, EnvIn, EnvOut1, Val1),
+  puts(Var, Val1, EnvOut1, EnvOut).
 
 interpret([], EnvIn, EnvIn):-!.
 interpret([H|T], EnvIn, EnvOut) :-
@@ -322,7 +325,7 @@ interpret(local([]), EnvIn, EnvIn):-!.
 interpret(local([H|T]), EnvIn, EnvOut):-
   interpret(local(T), [(local, H, 0) | EnvIn], EnvOut).
 
-interpret(procedure(Id, FA, B), EnvIn, [(proc, Id, FA, B) | EnvIn]).
+interpret(procedure(Id, FA, B), EnvIn, [(procedure, Id, FA, B) | EnvIn]).
 
 interpret(block(Dec, Ci), EnvIn, EnvOut) :-
   interpret(Dec, EnvIn, EnvOut1),
@@ -331,197 +334,5 @@ interpret(block(Dec, Ci), EnvIn, EnvOut) :-
 interpret(program(_, B), EnvIn, EnvOut) :-
   interpret(B, EnvIn, EnvOut).
 
+interpreter(Program) :- interpret(Program, [], _).
 
-
-
-
-
-
-
-
-
-
-
-% ====== TESTING ===========
-
-test_phrase(String, Pred) :-
-  atom_codes(String, Codes), phrase(Pred, Codes).
-
-test_identifier([]) :-
-  test_phrase("a111", identifier("a111")).
-test_identifier(["a111 not parsed by identifer"]).
-
-test_digit([]) :-
-  test_phrase("9", digit(57)).
-test_digit(["9 not parsed by digit"]).
-
-test_digits([]) :-
-  test_phrase("987", digits([57,56,55])).
-test_digits(["987 not parsed by digits"]).
-
-test_variable([]) :-
-  test_phrase("a112", variable("a112")).
-test_variable(["a112 not parsed by variable"]).
-
-test_variables([]) :-
-  test_phrase("a112", variables(["a112"])),
-  test_phrase("a112, aa", variables(["a112", "aa"])).
-test_variables(["a112 or a112,aa not parsed by variables"]).
-
-test_formal_arg([]) :-
-  test_phrase("a112", formal_arg(name("a112"))),
-  test_phrase("value a112", formal_arg(value("a112"))).
-test_formal_arg(["a112 or valuea112 not parsed by formal_arg"]).
-
-test_formal_arg_str([]) :-
-  test_phrase("aqwer", formal_arg_str([name("aqwer")])),
-  test_phrase("awer, wet3", formal_arg_str([name("awer"), name("wet3")])),
-  test_phrase("awe, value we2", formal_arg_str([name("awe"), value("we2")])).
-test_formal_arg_str(["aqwer, <<awer,wet3>> and <<awe,valuewe2>> not parsed by formal_arg_str"]).
-
-test_formal_args([]) :-
-  test_phrase("",formal_args([])),
-  test_phrase("awe, value we2", formal_args([name("awe"), value("we2")])).
-test_formal_args(["empty and awe,valuewe2 not parsed by formal_args"]).
-
-test_proc_name([]) :-
-  test_phrase("a112", proc_name("a112")).
-test_proc_name(["a112 not parsed by proc_name"]).
-
-test_declarator([]) :-
-  test_phrase("local a112", declarator(local(["a112"]))).
-test_declarator(["locala112 not parsed by delarator"]).
-
-test_atom_expr([]) :-
-  test_phrase("45", atom_expr(number(45))),
-  test_phrase("a45", atom_expr(variable("a45"))).
-test_atom_expr(["45 and a45 not parsed by atom expression"]).
-
-test_simple_expr([]) :-
-  test_phrase("a45", simple_expr(variable("a45"))),
-  test_phrase("( -45*4+5)", simple_expr(op("+",op("*", -number(45), +number(4)) ,+number(5)))).
-test_simple_expr(["a45 or (-45*4+5) not parsed by simple expression"]).
-
-test_factor([]) :-
-  test_phrase("a45", factor(+(variable("a45")))),
-  test_phrase("-45", factor(-(number(45)))).
-test_factor(["a45 or -45 not parsed by factor"]).
-
-test_indigirient([]) :-
-  test_phrase("-45", indigrient(-(number(45)))),
-  test_phrase("-45 div 4", indigrient(op("div", -(number(45)), +(number(4))))).
-test_indigirient(["-45 or -45div4 not parsed by indigrient"]).
-
-test_arithmetic_expr([]) :-
-  test_phrase("-45*4", arithmetic_expr(op("*", -(number(45)), +(number(4))))),
-  test_phrase("-45 *4+ 5", arithmetic_expr(op("+" ,op("*",-(number(45)) ,+(number(4))) ,+(number(5))))).
-test_arithmetic_expr(["-45*4 or -45*4+5 not parsed by arithmetic_expr"]).
-
-test_real_arg([]) :-
-  test_phrase("-45*4+5", real_arg(op("+" ,op("*",-(number(45)) ,+(number(4))) ,+(number(5))))).
-test_real_arg(["-45*4+5 not parsed by real_arg"]).
-
-test_real_args_str([]) :-
-  test_phrase("-45*4+5, 45, 56+6", real_args_str([op("+",op("*",-number(45) ,+number(4)) ,+number(5)), +number(45), op("+", +number(56), +number(6))])),
-  test_phrase("-45 *4 + 6", real_args_str([op("+",op("*",-number(45) ,+number(4) ) ,+number(6))])).
-test_real_args_str(["-45*4+5,45,56+6 or -45*4+6 not parsed by real_args_str"]).
-
-test_real_args([]) :-
-  test_phrase("-45*4, 45, 56+6", real_args([op("*", -number(45), +number(4)),+number(45) ,op("+", +number(56), +number(6))])),
-  test_phrase("", real_args([])).
-test_real_args(["-45*4,45,56+6 or empty not parsed by real_args"]).
-
-test_procedure_call([]) :-
-  test_phrase("ea23( 45, 5*6)", procedure_call(p_call("ea23", [+number(45), op("*", +number(5), +number(6))]))).
-test_procedure_call(["ea23(45,5*6) not parsed by procedure_call"]).
-
-test_instruction([]) :-
-  test_phrase("write 45 * 5", instruction(iwrite(op("*", +number(45), +number(5))))),
-  test_phrase("read b45", instruction(iread("b45"))),
-  test_phrase("return 45* 5", instruction(ireturn(op("*", +number(45), +number(5))))),
-  test_phrase("call a23( 45, 5*6)", instruction(icall(p_call("a23", [+number(45), op("*", +number(5), +number(6))])))),
-  test_phrase("while not45>5 do read r4 done", instruction(while(or([and([op(">", +variable("not45"), +number(5))])]), [iread("r4")]))),
-  test_phrase("if not34>4 then read r4 else read re fi", instruction(ifelse(or([and([op(">", +variable("not34"), +number(4))])]), [iread("r4")], [iread("re")]))),
-  test_phrase("if not 34>4 then read r4 fi", instruction(if(or([and([not(op(">", +number(34), +number(4)))])]), [iread("r4")]))),
-  test_phrase("awe := 3*4", instruction(assign("awe", op("*", +number(3), +number(4))))).
-test_instruction(["<<write45*5*6>> or <<readb45>> or <<return45*5*6>> or ... not parsed by instruction"]).
-
-test_compound_instruction([]) :-
-  test_phrase("call ea23(45, 5*6); write 45", compound_instruction([icall(p_call("ea23", [+number(45), op("*", +number(5), +number(6))])), iwrite(+number(45))])).
-test_compound_instruction(["X is not parsed by compound_instruction"]).
-
-test_rel_expr([]) :-
-  test_phrase("45*5 <> 5", rel_expr(op("<>",op("*", +number(45), +number(5)) ,+number(5)))),
-  test_phrase("(not 45 <> 5 and 45 > 6 or 45<> 7)", rel_expr(or([and([not(op("<>",+number(45), +number(5))),op(">", +number(45), +number(6))]),and([op("<>", +number(45), +number(7))])]))).
-test_rel_expr(["45*5<>5 not parsed by rel_expr"]).
-
-test_condition([]) :-
-  test_phrase("45* 5 <> 5", condition(op("<>",op("*", +number(45), +number(5)) ,+number(5)))),
-  test_phrase("not 45 <> 5", condition(not(op("<>",+number(45),+number(5))))).
-test_condition(["45*5<>5 or not45<>5 not parsed by condition"]).
-
-test_conjunction([]) :-
-  test_phrase("not 45 <>5 and 45 >6", conjunction(and([not(op("<>", +number(45), +number(5))), op(">", +number(45),+number(6))]))).
-test_conjunction(["not45<>5and45>6 not parsed by conjunction"]).
-
-test_logical_expr([]) :-
-  test_phrase("not 45 <>5 and 45> 6 or not 5 > 4", logical_expr(or([and([not(op("<>", +number(45), +number(5))), op(">", +number(45), +number(6))]), and([not(op(">", +number(5), +number(4)))])]))).
-test_logical_expr(["not45<>5and45>6ornot5>4 not parsed by logical_expr"]).
-
-test_declaration([]) :-
-  test_phrase("local w23, aaa, e", declaration(_)).
-test_declaration(["localw23,aaa,e not parsed by declaration"]).
-
-test_declarations([]) :-
-  test_phrase("local we, aaa, e", declarations(_)).
-test_declarations(["C not parsed by declarations"]).
-
-test_block([]) :-
-  test_phrase("local qwe, awe begin write 3*4 end",block(_)).
-test_block(["XYX not parsed by block"]).
-
-test_procedure([]) :-
-  test_phrase("procedure qwer( awe, valuewe) local w23, aaa, e begin write 3*4 end",procedure(_)).
-test_procedure(["X not parsed by procedure"]).
-
-test_program([]) :-
-  test_phrase("program qwer local w23, aaa, e begin write 3*4 end", program(_)).
-test_program(["X not parsed by program"]).
-
-test_all([]).
-test_all([H | T]) :-
-  call(H, E), (E = [] ; print(E)),
-  test_all(T).
-
-:- test_all([
-  test_identifier
-  ,test_digit
-  ,test_digits
-  ,test_variable
-  ,test_variables
-  ,test_formal_arg
-  ,test_proc_name
-  ,test_declarator
-  ,test_formal_arg_str
-  ,test_formal_args
-  ,test_atom_expr
-  ,test_simple_expr
-  ,test_factor
-  ,test_indigirient
-  ,test_arithmetic_expr
-  ,test_real_arg
-  ,test_real_args_str
-  ,test_real_args
-  ,test_procedure_call
-  ,test_instruction
-  ,test_compound_instruction
-  ,test_rel_expr
-  ,test_condition
-  ,test_conjunction
-  ,test_logical_expr
-  ,test_declaration
-  ,test_block
-  ,test_declarations
-  ,test_procedure
-  ,test_program
-]).
