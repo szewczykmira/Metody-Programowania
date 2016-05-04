@@ -336,3 +336,75 @@ interpret(program(_, B), EnvIn, EnvOut) :-
 
 interpreter(Program) :- interpret(Program, [], _).
 
+% =========== COMPILER ===============
+jump(Future, (ACC, AR, DR, MEM), History, Jump) :- 
+  reverse(History, RHistory), 
+  append(RHistory, Future, All), 
+  skip(Jump, All,[], NHistory, NFuture),
+  asm(NFuture, (ACC, AR, DR, MEM), NHistory).
+
+skip(0, P, H, H, P) :- !.
+skip(N, [H|T], Acc, History, Future) :- 
+  N1 is N - 1, 
+  skip(N1, T, [H | Acc], History, Future).
+
+asm([], _, _).
+% NOP -- do nothing
+asm([nop | T], (ACC, AR, DR, MEM), History) :- 
+  asm(T, (ACC, AR, DR, MEM), [nop | History]).
+% SYSCALL (syscall(ACC))
+asm([syscall | _], (0, _, _, _), _) :- 
+  abort.
+asm([syscall | T], (1, AR, DR, MEM), History) :- 
+  read(ACC), 
+  asm(T, (ACC, AR, DR, MEM), [syscall | History]).
+asm([syscall | T], (2, AR, DR, MEM), History) :- 
+  write(DR), 
+  asm(T, (2, AR, DR, MEM), [syscall | History]).
+% LOAD (MEM[AR] -> ACC)
+asm([load | T], (_, AR, DR, MEM), History) :- 
+  member((AR, Val), MEM), 
+  asm(T, (Val, AR, DR, MEM), [load |History]).
+% STORE (ACC -> MEM[AR])
+asm([store | T], (ACC, AR, DR, MEM), History) :- 
+  asm(T, (ACC, AR, DR, [(AR, ACC) | MEM]), [store | History]).
+% SWAPA (ACC <-> AR)
+asm([swapa | T], (ACC, AR, DR, MEM), History) :- 
+  asm(T, (AR, ACC, DR, MEM), [swapa | History]).
+% SWAPD (ACC <-> DR)
+asm([swapd | T], (ACC, AR, DR, MEM), History) :- 
+  asm(T, (DR, AR, ACC, MEM), [swapd | History]).
+% BRANCHZ (if ACC = 0 then AR -> PC)
+asm([branchz | T], (ACC, AR, DR, MEM), History) :- 
+  ACC = 0, !, 
+  jump([branchz | T], (ACC, AR, DR, MEM), History, AR).
+asm([branchz | T], (ACC, AR, DR, MEM), History) :- 
+  asm(T, (ACC, AR, DR, MEM), [branchz | History]).
+% BRANCHN (if ACC < 0 then  AR -> PC)
+asm([branchn | T], (ACC, AR, DR, MEM), History) :- 
+  ACC < 0, !, 
+  jump([branchn | T], (ACC, AR, DR, MEM), History, AR).
+asm([branchn | T], (ACC, AR, DR, MEM), History) :- 
+  asm(T, (ACC, AR, DR, MEM), [branchn | History]).
+% JUMP (ACC -> PC)
+asm([jump | T], (ACC, AR, DR, MEM), History) :- 
+  jump([jump|T], (ACC, AR, DR, MEM), History, ACC).
+% CONST (MEM[PC++] -> ACC)
+asm([const, N | T], (_, AR, DR, MEM), History) :- 
+  asm(T, (N, AR, DR, MEM), [const | History]).
+% ADD (ACC + DR -> ACC)
+asm([add | T], (ACC, AR, DR, MEM), History) :- 
+  ACC1 is ACC + DR, 
+  asm(T, (ACC1, AR, DR, MEM), [add | History]).
+% SUB (ACC - DR -> ACC)
+asm([sub | T], (ACC, AR, DR, MEM), History) :- 
+  ACC1 is ACC - DR, 
+  asm(T, (ACC1, AR, DR, MEM), [sub | History]).
+% MUL (ACC x DR -> ACC)
+asm([mul | T], (ACC, AR, DR, MEM), History) :- 
+  ACC1 is ACC * DR, 
+  asm(T, (ACC1, AR, DR, MEM), [mul | History]).
+% DIV (ACC/DR -> ACC)
+asm([div | T], (ACC, AR, DR, MEM), History) :- 
+  ACC1 is ACC div AR, 
+  asm(T, (ACC1, AR, DR, MEM), [div | History]).
