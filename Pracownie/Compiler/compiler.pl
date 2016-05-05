@@ -467,5 +467,5 @@ compile(op("*", E1, E2), Commands) :-
 
 %eval(op("-", Var1, Var2), EnvIn, EnvOut, Val) :-
 
-program(Ast, Compiled) :- 
+program(Ast, [const, 0, swapa, const, 1, store | Compiled]) :- 
   compile(Ast, Compiled).
