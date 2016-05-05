@@ -435,7 +435,7 @@ asm([div | T], (ACC, AR, DR, MEM), History) :-
 % We are assuming that every compilation is finishing in ACC
 
 increase_stack([const, 0, swapa, load, swapd, const, 1, add, swapd, const, 0, swapa, swapd, store]).
-decrease_stack([const, 0, swapa, load, swapd, const, 1, sub, swapd, const, 9, swapa, swapd, store]).
+decrease_stack([const, 0, swapa, load, swapd, const, -1, add, swapd, const, 0, swapa, swapd, store]).
 save_acc_to_stack([swapd, const, 0, swapa, load, swapa, swapd, store]).
 
 
@@ -455,12 +455,23 @@ compile(+(Arg), Commands) :-
   compile(Arg, Commands). 
 
 %eval(op("*", Var1, Var2), Env, EnvOut, Val) :-
-compile(op("*", E1, _), Commands) :- 
+compile(op("*", E1, E2), Commands) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
+  compile(E2, C2),
+  % save_acc_to_stack
+  decrease_stack(Decr),
+  X = [const, 0, swapa, load, swapd, const, 1,
+  add, swapa, load, swapd], % take C2 = stack + 1
+  Y = [const, 0, swapa, load,swapa, load, mul], % take C1 = stack,
   append(C1, Stack, S1),
-  append(S1, Incr, Commands).
+  append(Incr, C2, S2),
+  append(Stack, Decr, S3),
+  append(X, Y, S4),
+  append(S1, S2, U1),
+  append(S3, S4, U2),
+  append(U1, U2, Commands).
 
 %eval(op("div", Var1, Var2), EnvIn, EnvOut, Val) :-
 
