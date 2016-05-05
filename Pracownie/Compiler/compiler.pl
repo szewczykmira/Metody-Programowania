@@ -348,6 +348,10 @@ skip(N, [H|T], Acc, History, Future) :-
   N1 is N - 1, 
   skip(N1, T, [H | Acc], History, Future).
 
+replace(Index, NVal, [(Index, _) | List], [(Index, NVal) | List]).
+replace(Index, NVal, [H | T], [H | Result]) :-
+  replace(Index, NVal, T, Result).
+
 asm([], _, _).
 
 % NOP -- do nothing
@@ -371,7 +375,11 @@ asm([load | T], (_, AR, DR, MEM), History) :-
 
 % STORE (ACC -> MEM[AR])
 asm([store | T], (ACC, AR, DR, MEM), History) :- 
+  \+ member((AR,_), MEM),
   !, asm(T, (ACC, AR, DR, [(AR, ACC) | MEM]), [store | History]).
+asm([store | T], (ACC, AR, DR, MEM), History) :-
+  !, replace(AR, ACC, MEM, Result),
+  asm(T, (ACC, AR, DR, Result), [store | History]).
 
 % SWAPA (ACC <-> AR)
 asm([swapa | T], (ACC, AR, DR, MEM), History) :- 
@@ -426,9 +434,9 @@ asm([div | T], (ACC, AR, DR, MEM), History) :-
 
 % We are assuming that every compilation is finishing in ACC
 
-increasing_stack(C, [const, 0, swapa, load, swapd, const, 1, add, swapd, const, 0, swapa, swapd, store | C]).
-decrease_stack(C, [const, 0, swapa, load, swapd, const, 1, sub, swapd, const, 9, swapa, swapd, store | C]).
-save_acc_to_stack(C, [swapd, const, 0, swapa, swapd, store| C]).
+increase_stack([const, 0, swapa, load, swapd, const, 1, add, swapd, const, 0, swapa, swapd, store]).
+decrease_stack([const, 0, swapa, load, swapd, const, 1, sub, swapd, const, 9, swapa, swapd, store]).
+save_acc_to_stack([swapd, const, 0, swapa, load, swapa, swapd, store]).
 
 
 %e(number(Arg), B, B, Arg).
@@ -447,17 +455,12 @@ compile(+(Arg), Commands) :-
   compile(Arg, Commands). 
 
 %eval(op("*", Var1, Var2), Env, EnvOut, Val) :-
-compile(op("*", E1, E2), Commands) :- 
+compile(op("*", E1, _), Commands) :- 
   compile(E1, C1),
-  save_acc_to_stack(Ci, Cs),
-  increase_stack(C2, Ci),
-  compile(E2, C2),
-  save_acc_to_stack(X, Y),
-  decrease_stack(Z, X),
-  Z = [swapd, const, 1, add, swapa, load, swapd, % load c2
-  const, 0, swapa, load, add], % load c1 and add
-  append(Cs, Y, Comp),
-  append(C1, Comp,Commands).
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  append(C1, Stack, S1),
+  append(S1, Incr, Commands).
 
 %eval(op("div", Var1, Var2), EnvIn, EnvOut, Val) :-
 
