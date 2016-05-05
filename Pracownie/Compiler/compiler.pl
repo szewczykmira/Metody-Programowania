@@ -349,9 +349,11 @@ skip(N, [H|T], Acc, History, Future) :-
   skip(N1, T, [H | Acc], History, Future).
 
 asm([], _, _).
+
 % NOP -- do nothing
 asm([nop | T], (ACC, AR, DR, MEM), History) :- 
   asm(T, (ACC, AR, DR, MEM), [nop | History]).
+
 % SYSCALL (syscall(ACC))
 asm([syscall | _], (0, _, _, _), _) :- 
   abort.
@@ -361,50 +363,109 @@ asm([syscall | T], (1, AR, DR, MEM), History) :-
 asm([syscall | T], (2, AR, DR, MEM), History) :- 
   write(DR), 
   asm(T, (2, AR, DR, MEM), [syscall | History]).
+
 % LOAD (MEM[AR] -> ACC)
 asm([load | T], (_, AR, DR, MEM), History) :- 
   member((AR, Val), MEM), 
   asm(T, (Val, AR, DR, MEM), [load |History]).
+
 % STORE (ACC -> MEM[AR])
 asm([store | T], (ACC, AR, DR, MEM), History) :- 
   asm(T, (ACC, AR, DR, [(AR, ACC) | MEM]), [store | History]).
+
 % SWAPA (ACC <-> AR)
 asm([swapa | T], (ACC, AR, DR, MEM), History) :- 
   asm(T, (AR, ACC, DR, MEM), [swapa | History]).
+
 % SWAPD (ACC <-> DR)
 asm([swapd | T], (ACC, AR, DR, MEM), History) :- 
   asm(T, (DR, AR, ACC, MEM), [swapd | History]).
+
 % BRANCHZ (if ACC = 0 then AR -> PC)
 asm([branchz | T], (ACC, AR, DR, MEM), History) :- 
   ACC = 0, !, 
   jump([branchz | T], (ACC, AR, DR, MEM), History, AR).
 asm([branchz | T], (ACC, AR, DR, MEM), History) :- 
   asm(T, (ACC, AR, DR, MEM), [branchz | History]).
+
 % BRANCHN (if ACC < 0 then  AR -> PC)
 asm([branchn | T], (ACC, AR, DR, MEM), History) :- 
   ACC < 0, !, 
   jump([branchn | T], (ACC, AR, DR, MEM), History, AR).
 asm([branchn | T], (ACC, AR, DR, MEM), History) :- 
   asm(T, (ACC, AR, DR, MEM), [branchn | History]).
+
 % JUMP (ACC -> PC)
 asm([jump | T], (ACC, AR, DR, MEM), History) :- 
   jump([jump|T], (ACC, AR, DR, MEM), History, ACC).
+
 % CONST (MEM[PC++] -> ACC)
 asm([const, N | T], (_, AR, DR, MEM), History) :- 
   asm(T, (N, AR, DR, MEM), [const | History]).
+
 % ADD (ACC + DR -> ACC)
 asm([add | T], (ACC, AR, DR, MEM), History) :- 
   ACC1 is ACC + DR, 
   asm(T, (ACC1, AR, DR, MEM), [add | History]).
+
 % SUB (ACC - DR -> ACC)
 asm([sub | T], (ACC, AR, DR, MEM), History) :- 
   ACC1 is ACC - DR, 
   asm(T, (ACC1, AR, DR, MEM), [sub | History]).
+
 % MUL (ACC x DR -> ACC)
 asm([mul | T], (ACC, AR, DR, MEM), History) :- 
   ACC1 is ACC * DR, 
   asm(T, (ACC1, AR, DR, MEM), [mul | History]).
+
 % DIV (ACC/DR -> ACC)
 asm([div | T], (ACC, AR, DR, MEM), History) :- 
   ACC1 is ACC div AR, 
   asm(T, (ACC1, AR, DR, MEM), [div | History]).
+
+
+% We are assuming that every compilation is finishing in ACC
+
+increasing_stack(C, [const, 0, swapa, load, swapd, const, 1, add, swapd, const, 0, swapa, swapd, store | C]).
+decrease_stack(C, [const, 0, swapa, load, swapd, const, 1, sub, swapd, const, 9, swapa, swapd, store | C]).
+save_acc_to_stack(C, [swapd, const, 0, swapa, swapd, store| C]).
+
+
+%e(number(Arg), B, B, Arg).
+compile(number(Arg), [const, Arg]).
+
+%e(variable(Var), Env, Env, Arg) :-
+compile(variable(Var), [const, Var, swapa, load]).
+
+%e(-(Arg), EnvIn, EnvOut, Val) :-
+compile(-(Arg), Commands) :- 
+  compile(Arg, C1), 
+  append(C1, [swapd, const, -1, mul], Commands).
+
+%e(+(Arg), Env, EnvOut, Val) :-
+compile(+(Arg), Commands) :- 
+  compile(Arg, Commands). 
+
+%eval(op("*", Var1, Var2), Env, EnvOut, Val) :-
+compile(op("*", E1, E2), Commands) :- 
+  compile(E1, C1),
+  save_acc_to_stack(Ci, Cs),
+  increase_stack(C2, Ci),
+  compile(E2, C2),
+  save_acc_to_stack(X, Y),
+  decrease_stack(Z, X),
+  Z = [swapd, const, 1, add, swapa, load, swapd, % load c2
+  const, 0, swapa, load, add], % load c1 and add
+  append(Cs, Y, Comp),
+  append(C1, Comp,Commands).
+
+%eval(op("div", Var1, Var2), EnvIn, EnvOut, Val) :-
+
+%eval(op("mod", Var1, Var2), EnvIn, EnvOut, Val) :-
+
+%eval(op("+", Var1, Var2), EnvIn, EnvOut, Val) :-
+
+%eval(op("-", Var1, Var2), EnvIn, EnvOut, Val) :-
+
+program(Ast, Compiled) :- 
+  compile(Ast, Compiled).
