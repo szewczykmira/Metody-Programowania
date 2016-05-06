@@ -439,22 +439,17 @@ decrease_stack([const, 0, swapa, load, swapd, const, -1, add, swapd, const, 0, s
 save_acc_to_stack([swapd, const, 0, swapa, load, swapa, swapd, store]).
 
 
-%e(number(Arg), B, B, Arg).
 compile(number(Arg), [const, Arg]).
 
-%e(variable(Var), Env, Env, Arg) :-
 compile(variable(Var), [const, Var, swapa, load]).
 
-%e(-(Arg), EnvIn, EnvOut, Val) :-
 compile(-(Arg), Commands) :- 
   compile(Arg, C1), 
   append(C1, [swapd, const, -1, mul], Commands).
 
-%e(+(Arg), Env, EnvOut, Val) :-
 compile(+(Arg), Commands) :- 
   compile(Arg, Commands). 
 
-%eval(op("*", Var1, Var2), Env, EnvOut, Val) :-
 compile(op("*", E1, E2), Commands) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
@@ -473,7 +468,6 @@ compile(op("*", E1, E2), Commands) :-
   append(S3, S4, U2),
   append(U1, U2, Commands).
 
-%eval(op("div", Var1, Var2), EnvIn, EnvOut, Val) :-
 compile(op("*", E1, E2), Commands) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
@@ -504,7 +498,6 @@ compile(op("mod", E1, E2), Commands) :-
   % get MUL = DIV * C2
   % get C1 - MUL
 
-%eval(op("+", Var1, Var2), EnvIn, EnvOut, Val) :-
 compile(op("*", E1, E2), Commands) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
@@ -523,7 +516,6 @@ compile(op("*", E1, E2), Commands) :-
   append(S3, S4, U2),
   append(U1, U2, Commands).
 
-%eval(op("-", Var1, Var2), EnvIn, EnvOut, Val) :-
 compile(op("*", E1, E2), Commands) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
@@ -572,9 +564,13 @@ compile(op("*", E1, E2), Commands) :-
 
 %interpret(if(Logic,If), EnvIn, EnvOut) :-
 
-%interpret(assign(Var, Val), EnvIn, EnvOut) :-
+compile(assign(Var, Val), [const, Var, swapa, const, Val, store]).
 
-%interpret([H|T], EnvIn, EnvOut) :-
+compile([], []).
+compile([H|T], Commands) :-
+  compile(H, HCommands),
+  compile(T, TCommands),
+  append(HCommands, TCommands).
 
 %interpret(declarations([H|T]), EnvIn, EnvOut) :-
 
