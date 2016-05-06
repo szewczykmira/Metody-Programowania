@@ -493,6 +493,16 @@ compile(op("*", E1, E2), Commands) :-
   append(U1, U2, Commands).
 
 %eval(op("mod", Var1, Var2), EnvIn, EnvOut, Val) :-
+compile(op("mod", E1, E2), Commands) :-
+  compile(E1, C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  compile(E2, C2).
+  % save_acc_to_stack
+  % increase_stack
+  % get DIV = C1 div C2 to acc
+  % get MUL = DIV * C2
+  % get C1 - MUL
 
 %eval(op("+", Var1, Var2), EnvIn, EnvOut, Val) :-
 compile(op("*", E1, E2), Commands) :- 
@@ -531,5 +541,51 @@ compile(op("*", E1, E2), Commands) :-
   append(S1, S2, U1),
   append(S3, S4, U2),
   append(U1, U2, Commands).
+
+%eval(not(A), EnvIn, EnvOut, Val) :-
+
+%eval(op("<=", Var1, Var2), EnvIn, EnvOut, X) :-
+
+%eval(op(">=", Var1, Var2), EnvIn, EnvOut, X) :-
+
+%eval(op("<", Var1, Var2), EnvIn, EnvOut, X) :-
+
+%eval(op(">", Var1, Var2), EnvIn, EnvOut, X) :-
+
+%eval(op("<>", Var1, Var2), EnvIn, EnvOut, X) :-
+
+%eval(or([H|_]), EnvIn, EnvOut, true) 
+
+%eval(and([]), Env, Env, true) :- !.
+
+%interpret(iwrite(Arg), EnvIn, EnvOut) :-
+
+%interpret(iread(Arg), EnvIn, EnvOut) :-
+
+%interpret(ireturn(Arg), EnvIn, _) :-
+
+%interpret(icall(A), EnvIn, EnvOut) :-
+
+%interpret(while(Logic, Compound), EnvIn, EnvOut) :-
+
+%interpret(ifelse(Logic,If,_), EnvIn, EnvOut) :-
+
+%interpret(if(Logic,If), EnvIn, EnvOut) :-
+
+%interpret(assign(Var, Val), EnvIn, EnvOut) :-
+
+%interpret([H|T], EnvIn, EnvOut) :-
+
+%interpret(declarations([H|T]), EnvIn, EnvOut) :-
+
+%interpret(local([]), EnvIn, EnvIn):-!.
+
+%interpret(procedure(Id, FA, B), EnvIn, [(procedure, Id, FA, B) | EnvIn]).
+
+%interpret(block(Dec, Ci), EnvIn, EnvOut) :-
+
+%interpret(program(_, B), EnvIn, EnvOut) :-
+
+
 program(Ast, [const, 0, swapa, const, 1, store | Compiled]) :- 
   compile(Ast, Compiled).
