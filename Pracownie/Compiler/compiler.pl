@@ -474,12 +474,62 @@ compile(op("*", E1, E2), Commands) :-
   append(U1, U2, Commands).
 
 %eval(op("div", Var1, Var2), EnvIn, EnvOut, Val) :-
+compile(op("*", E1, E2), Commands) :- 
+  compile(E1, C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  compile(E2, C2),
+  % save_acc_to_stack
+  decrease_stack(Decr),
+  X = [const, 0, swapa, load, swapd, const, 1,
+  add, swapa, load, swapd], % take C2 = stack + 1
+  Y = [const, 0, swapa, load,swapa, load, div], % take C1 = stack,
+  append(C1, Stack, S1),
+  append(Incr, C2, S2),
+  append(Stack, Decr, S3),
+  append(X, Y, S4),
+  append(S1, S2, U1),
+  append(S3, S4, U2),
+  append(U1, U2, Commands).
 
 %eval(op("mod", Var1, Var2), EnvIn, EnvOut, Val) :-
 
 %eval(op("+", Var1, Var2), EnvIn, EnvOut, Val) :-
+compile(op("*", E1, E2), Commands) :- 
+  compile(E1, C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  compile(E2, C2),
+  % save_acc_to_stack
+  decrease_stack(Decr),
+  X = [const, 0, swapa, load, swapd, const, 1,
+  add, swapa, load, swapd], % take C2 = stack + 1
+  Y = [const, 0, swapa, load,swapa, load, add], % take C1 = stack,
+  append(C1, Stack, S1),
+  append(Incr, C2, S2),
+  append(Stack, Decr, S3),
+  append(X, Y, S4),
+  append(S1, S2, U1),
+  append(S3, S4, U2),
+  append(U1, U2, Commands).
 
 %eval(op("-", Var1, Var2), EnvIn, EnvOut, Val) :-
-
+compile(op("*", E1, E2), Commands) :- 
+  compile(E1, C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  compile(E2, C2),
+  % save_acc_to_stack
+  decrease_stack(Decr),
+  X = [const, 0, swapa, load, swapd, const, 1,
+  add, swapa, load, swapd], % take C2 = stack + 1
+  Y = [const, 0, swapa, load,swapa, load, sub], % take C1 = stack,
+  append(C1, Stack, S1),
+  append(Incr, C2, S2),
+  append(Stack, Decr, S3),
+  append(X, Y, S4),
+  append(S1, S2, U1),
+  append(S3, S4, U2),
+  append(U1, U2, Commands).
 program(Ast, [const, 0, swapa, const, 1, store | Compiled]) :- 
   compile(Ast, Compiled).
