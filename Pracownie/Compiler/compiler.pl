@@ -550,9 +550,11 @@ compile(op("*", E1, E2), Commands) :-
 
 %eval(and([]), Env, Env, true) :- !.
 
-%interpret(iwrite(Arg), EnvIn, EnvOut) :-
+compile(iwrite(E), Commands) :-
+  compile(E, C),
+  append(C, [swapd, const, 2, syscall]).
 
-%interpret(iread(Arg), EnvIn, EnvOut) :-
+compile(iread(E), [const, E, swapa, const, 1, syscall, store]).
 
 %interpret(ireturn(Arg), EnvIn, _) :-
 
