@@ -438,6 +438,7 @@ increase_stack([const, 0, swapa, load, swapd, const, 1, add, swapd, const, 0, sw
 decrease_stack([const, 0, swapa, load, swapd, const, -1, add, swapd, const, 0, swapa, swapd, store]).
 save_acc_to_stack([swapd, const, 0, swapa, load, swapa, swapd, store]).
 
+% proc_call -> jump to definition!
 
 compile(number(Arg), [const, Arg]).
 
@@ -493,12 +494,16 @@ compile(op("mod", E1, E2), Commands) :-
   compile(E2, C2),
   % save_acc_to_stack
   % get DIV = C1 div C2 to acc
-  DIV = [const, 0, swapa, load, swapa, load, swapa, swapd, const, -1, add, swapa, swapd, load, div],
+  DIV = [const, 0, swapa, load, swapa, load, swapa,
+  swapd, const, -1, add, swapa, swapd, load, div],
   decrease_stack(Decr),
   % get MUL = DIV * C2
-  MUL = [mul, swapd, const, 0, swapa, load, swapa, swapd, store | Decr],
+  MUL = [mul, swapd, const, 0, swapa, load, swapa,
+  swapd, store | Decr],
   % get C1 - MUL.
-  SUB = [const, 0, swapa, load, swapd, const, 1, add, swapa, load, swapd, const, 0, swapa, load, swapa, load, sub],
+  SUB = [const, 0, swapa, load, swapd, const, 1,
+  add, swapa, load, swapd, const, 0, swapa, load,
+  swapa, load, sub],
   append(C1, Stack,S1),
   append(Incr, C2, S2),
   append(Stack, DIV, S3),
@@ -583,16 +588,22 @@ compile([H|T], Commands) :-
   compile(T, TCommands),
   append(HCommands, TCommands, Commands).
 
-%interpret(declarations([H|T]), EnvIn, EnvOut) :-
+compile(declarations([]), []).
+compile(declarations([H|T]), Commands) :-
+  compile(H, Ch),
+  compile(T, Ct),
+  append(Ch, Ct, Commands).
 
-%interpret(local([]), EnvIn, EnvIn):-!.
+compile(local([]), []).
+compile(local([H|T]), [const, H, swapa, const, 0, store | Commands]) :-
+  compile(T, Commands).
 
 %interpret(procedure(Id, FA, B), EnvIn, [(procedure, Id, FA, B) | EnvIn]).
 
 %interpret(block(Dec, Ci), EnvIn, EnvOut) :-
 
-%interpret(program(_, B), EnvIn, EnvOut) :-
-
+compile(program(_, B), Commands) :-
+  compile(B, Commands).
 
 program(Ast, [const, 0, swapa, const, 1, store | Compiled]) :- 
   compile(Ast, Compiled).
