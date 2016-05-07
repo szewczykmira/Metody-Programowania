@@ -428,7 +428,7 @@ asm([mul | T], (ACC, AR, DR, MEM), History) :-
 
 % DIV (ACC/DR -> ACC)
 asm([div | T], (ACC, AR, DR, MEM), History) :- 
-  !, ACC1 is ACC div AR, 
+  !, ACC1 is ACC div DR, 
   asm(T, (ACC1, AR, DR, MEM), [div | History]).
 
 
@@ -468,7 +468,7 @@ compile(op("*", E1, E2), Commands) :-
   append(S3, S4, U2),
   append(U1, U2, Commands).
 
-compile(op("*", E1, E2), Commands) :- 
+compile(op("div", E1, E2), Commands) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
@@ -486,19 +486,27 @@ compile(op("*", E1, E2), Commands) :-
   append(S3, S4, U2),
   append(U1, U2, Commands).
 
-%eval(op("mod", Var1, Var2), EnvIn, EnvOut, Val) :-
 compile(op("mod", E1, E2), Commands) :-
   compile(E1, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
-  compile(E2, C2).
+  compile(E2, C2),
   % save_acc_to_stack
-  % increase_stack
   % get DIV = C1 div C2 to acc
+  DIV = [const, 0, swapa, load, swapa, load, swapa, swapd, const, -1, add, swapa, swapd, load, div],
   % get MUL = DIV * C2
-  % get C1 - MUL
+  MUL = [],
+  % get C1 - MUL.
+  SUB = [],
+  append(C1, Stack,S1),
+  append(Incr, C2, S2),
+  append(Stack, DIV, S3),
+  append(MUL, SUB, S4),
+  append(S1, S2, U1),
+  append(S3, S4, U2),
+  append(U1, U2, Commands).
 
-compile(op("*", E1, E2), Commands) :- 
+compile(op("+", E1, E2), Commands) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
@@ -516,7 +524,7 @@ compile(op("*", E1, E2), Commands) :-
   append(S3, S4, U2),
   append(U1, U2, Commands).
 
-compile(op("*", E1, E2), Commands) :- 
+compile(op("-", E1, E2), Commands) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
@@ -552,7 +560,7 @@ compile(op("*", E1, E2), Commands) :-
 
 compile(iwrite(E), Commands) :-
   compile(E, C),
-  append(C, [swapd, const, 2, syscall]).
+  append(C, [swapd, const, 2, syscall], Commands).
 
 compile(iread(E), [const, E, swapa, const, 1, syscall, store]).
 
@@ -572,7 +580,7 @@ compile([], []).
 compile([H|T], Commands) :-
   compile(H, HCommands),
   compile(T, TCommands),
-  append(HCommands, TCommands).
+  append(HCommands, TCommands, Commands).
 
 %interpret(declarations([H|T]), EnvIn, EnvOut) :-
 
