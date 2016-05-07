@@ -494,10 +494,11 @@ compile(op("mod", E1, E2), Commands) :-
   % save_acc_to_stack
   % get DIV = C1 div C2 to acc
   DIV = [const, 0, swapa, load, swapa, load, swapa, swapd, const, -1, add, swapa, swapd, load, div],
+  decrease_stack(Decr),
   % get MUL = DIV * C2
-  MUL = [],
+  MUL = [mul, swapd, const, 0, swapa, load, swapa, swapd, store | Decr],
   % get C1 - MUL.
-  SUB = [],
+  SUB = [const, 0, swapa, load, swapd, const, 1, add, swapa, load, swapd, const, 0, swapa, load, swapa, load, sub],
   append(C1, Stack,S1),
   append(Incr, C2, S2),
   append(Stack, DIV, S3),
