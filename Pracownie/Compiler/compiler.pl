@@ -339,11 +339,11 @@ interpreter(Program) :- interpret(Program, [], _).
 % =========== COMPILER ===============
 jump(Future, (ACC, AR, DR, MEM), History, Jump) :- 
   reverse(History, RHistory), 
-  append(RHistory, Future, All), 
+  append(RHistory, Future, All),
   skip(Jump, All,[], NHistory, NFuture),
   asm(NFuture, (ACC, AR, DR, MEM), NHistory).
 
-skip(0, P, H, H, P) :- !.
+skip(0, P, H, H1, P) :- reverse(H, H1), !.
 skip(N, [H|T], Acc, History, Future) :- 
   N1 is N - 1, 
   skip(N1, T, [H | Acc], History, Future).
@@ -409,7 +409,7 @@ asm([jump | T], (ACC, AR, DR, MEM), History) :-
 
 % CONST (MEM[PC++] -> ACC)
 asm([const, N | T], (_, AR, DR, MEM), History) :- 
-  !, asm(T, (N, AR, DR, MEM), [const | History]).
+  !, asm(T, (N, AR, DR, MEM), [const, N | History]).
 
 % ADD (ACC + DR -> ACC)
 asm([add | T], (ACC, AR, DR, MEM), History) :- 
@@ -550,19 +550,53 @@ compile(op("-", E1, E2), Commands) :-
 
 %eval(not(A), EnvIn, EnvOut, Val) :-
 
-%eval(op("<=", Var1, Var2), EnvIn, EnvOut, X) :-
+% 1<=2 "1" / 1 <= 1 "0" / 2 <= 1 "-1"
+compile(op("<=", Ex1, Ex2), Commands) :-
+  compile(op("-", Ex2, Ex1), C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  % if Acc < 0 then jump to LT,
+  IF = [swapa, const, LT, swapa, branchn, const, 1 | Stack],
+  Lt = [const, Fin, jump, label(LT), const, 45 | Stack],
+  F = [label(Fin) | Incr ],
+  append(C1, IF, I1),
+  append(Lt, F, I2),
+  append(I1, I2, Commands).
 
-%eval(op(">=", Var1, Var2), EnvIn, EnvOut, X) :-
+compile(op(">=", Ex1, Ex2), Commands) :-
+  compile(op("-", Ex1, Ex2), C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  append(C1, Stack, S1),
+  append(S1, Incr, Commands).
 
-%eval(op("<", Var1, Var2), EnvIn, EnvOut, X) :-
+compile(op("<", Ex1, Ex2), Commands) :-
+  compile(op("-", Ex2, Ex1), C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  append(C1, Stack, S1),
+  append(S1, Incr, Commands).
 
-%eval(op(">", Var1, Var2), EnvIn, EnvOut, X) :-
+compile(op(">", Ex1, Ex2), Commands) :-
+  compile(op("-", Ex1, Ex2), C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  append(C1, Stack, S1),
+  append(S1, Incr, Commands).
 
 %eval(op("<>", Var1, Var2), EnvIn, EnvOut, X) :-
+compile(op("<>", Ex1, Ex2), Commands) :-
+  compile(op("-", Ex1, Ex2), C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  append(C1, Stack, S1),
+  append(S1, Incr, Commands).
 
 %eval(or([H|_]), EnvIn, EnvOut, true) 
+compile(or([]), []).
 
 %eval(and([]), Env, Env, true) :- !.
+compile(and([]), []).
 
 compile(iwrite(E), Commands) :-
   compile(E, C),
@@ -577,8 +611,18 @@ compile(iread(E), [const, E, swapa, const, 1, syscall, store]).
 %interpret(while(Logic, Compound), EnvIn, EnvOut) :-
 
 %interpret(ifelse(Logic,If,_), EnvIn, EnvOut) :-
+%compile(if(Expr, E1, E2), Commands) :- compile_expr(Expr, CEx1), compile(E1, C1), compile(E2, C2),
+%  append(CEx1, [swap, const, X, swap, branch | C2], C2n),
+%  append(C2n, [const, Y, swap, const, 0, branch, label(X) | C1], C1n),
+%  append(C1n, [label(Y)], Commands).
+
 
 %interpret(if(Logic,If), EnvIn, EnvOut) :-
+compile(if(Logic, If), Commands) :-
+  compile(Logic, CLogic),
+  compile(If, CIf),
+  append(CLogic, [swapd, const, X, swapa, branchz |CIf], S1),
+  append(S1, [label(X)], Commands).
 
 compile(assign(Var, Val), [const, Var, swapa, const, Val, store]).
 
@@ -600,10 +644,28 @@ compile(local([H|T]), [const, H, swapa, const, 0, store | Commands]) :-
 
 %interpret(procedure(Id, FA, B), EnvIn, [(procedure, Id, FA, B) | EnvIn]).
 
-%interpret(block(Dec, Ci), EnvIn, EnvOut) :-
+compile(block(Dec, Comp), Commands) :-
+  compile(Dec, C1),
+  compile(Comp, C2),
+  append(C1, C2, Commands).
 
 compile(program(_, B), Commands) :-
   compile(B, Commands).
 
-program(Ast, [const, 0, swapa, const, 1, store | Compiled]) :- 
-  compile(Ast, Compiled).
+% need to fix labels :)
+fix_labels([], _, []).
+fix_labels([H | T], N, [H | Tc]) :- var(H), !, N1 is N+1, fix_labels(T, N1, Tc).
+fix_labels([label(V) | T], N, Tc) :- !, V = N, fix_labels(T, N, Tc).
+fix_labels([H | T], N, [H | Tc]) :- N1 is N+1, fix_labels(T, N1, Tc).
+
+debug_print([], _):-!.
+debug_print(_, []):-!.
+debug_print([H|T], [Hh | Tt]) :-
+  write(H >> Hh), nl,
+  debug_print(T, Tt).
+
+program(Ast, Compiled) :-
+  compile(Ast, LwL),!,
+  Full = [const, 0, swapa, const, 1, store | LwL],
+  fix_labels(Full, 0, Compiled).
+  %debug_print(Full, Compiled).
