@@ -557,40 +557,63 @@ compile(op("<=", Ex1, Ex2), Commands) :-
   increase_stack(Incr),
   % if Acc < 0 then jump to LT,
   IF = [swapa, const, LT, swapa, branchn, const, 1 | Stack],
-  Lt = [const, Fin, jump, label(LT), const, 45 | Stack],
+  Lt = [const, Fin, jump, label(LT), const, 0 | Stack],
   F = [label(Fin) | Incr ],
   append(C1, IF, I1),
   append(Lt, F, I2),
   append(I1, I2, Commands).
 
+% 1 >= 2 "-1" / 1 >= 1 "0" / 2 >= 1 "1"
 compile(op(">=", Ex1, Ex2), Commands) :-
   compile(op("-", Ex1, Ex2), C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
-  append(C1, Stack, S1),
-  append(S1, Incr, Commands).
+  % if Acc < 0 then jump to LT,
+  IF = [swapa, const, LT, swapa, branchn, const, 1 | Stack],
+  Lt = [const, Fin, jump, label(LT), const, 0 | Stack],
+  F = [label(Fin) | Incr ],
+  append(C1, IF, I1),
+  append(Lt, F, I2),
+  append(I1, I2, Commands).
 
-compile(op("<", Ex1, Ex2), Commands) :-
+% 1 > 2 "-1" / 1 > 1 "0" / 2 > 1 "1"
+compile(op(">", Ex1, Ex2), Commands) :-
   compile(op("-", Ex2, Ex1), C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
-  append(C1, Stack, S1),
-  append(S1, Incr, Commands).
+  % if Acc < 0 then jump to LT,
+  IF = [swapa, const, LT, swapa, branchn, const, 0 | Stack],
+  Lt = [const, Fin, jump, label(LT), const, 1 | Stack],
+  F = [label(Fin) | Incr ],
+  append(C1, IF, I1),
+  append(Lt, F, I2),
+  append(I1, I2, Commands).
 
-compile(op(">", Ex1, Ex2), Commands) :-
+% 1 < 2 "-1" / 1 < 1 "0" / 2 > 1 "1"
+compile(op("<", Ex1, Ex2), Commands) :-
   compile(op("-", Ex1, Ex2), C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
-  append(C1, Stack, S1),
-  append(S1, Incr, Commands).
+  % if Acc < 0 then jump to LT,
+  IF = [swapa, const, LT, swapa, branchn, const, 0 | Stack],
+  Lt = [const, Fin, jump, label(LT), const, 1 | Stack],
+  F = [label(Fin) | Incr ],
+  append(C1, IF, I1),
+  append(Lt, F, I2),
+  append(I1, I2, Commands).
 
-%eval(op("<>", Var1, Var2), EnvIn, EnvOut, X) :-
-compile(op("<>", Ex1, Ex2), Commands) :-
+% 1 <> 2 "-1" / 1 <> 1 "0" / 2 <> 1 "1"
+compile(op("<", Ex1, Ex2), Commands) :-
   compile(op("-", Ex1, Ex2), C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
-  append(C1, Stack, S1),
-  append(S1, Incr, Commands).
+  % if Acc < 0 then jump to LT,
+  IF = [swapa, const, LT, swapa, branchz, const, 0 | Stack],
+  Lt = [const, Fin, jump, label(LT), const, 1 | Stack],
+  F = [label(Fin) | Incr ],
+  append(C1, IF, I1),
+  append(Lt, F, I2),
+  append(I1, I2, Commands).
 
 %eval(or([H|_]), EnvIn, EnvOut, true) 
 compile(or([]), []).
