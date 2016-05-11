@@ -604,6 +604,8 @@ compile(op("<>", Ex1, Ex2), Commands) :-
   append(I1, Lt, Commands).
 
 compile(or([]), []).
+compile(or([H]), Commands) :-
+  compile(H, Commands).
 compile(or([H|T]), Commands) :- 
   compile(H, C1),
   save_acc_to_stack(Stack),
@@ -614,6 +616,8 @@ compile(or([H|T]), Commands) :-
   append(S1, S2, Commands).
 
 compile(and([]), []).
+compile(and([H]), Commands) :-
+  compile(H, Commands).
 compile(and([H|T]), Commands) :- 
   compile(H, C1),
   save_acc_to_stack(Stack),
@@ -635,19 +639,24 @@ compile(iread(E), [const, E, swapa, const, 1, syscall, store]).
 
 %interpret(while(Logic, Compound), EnvIn, EnvOut) :-
 
-%interpret(ifelse(Logic,If,_), EnvIn, EnvOut) :-
-%compile(if(Expr, E1, E2), Commands) :- compile_expr(Expr, CEx1), compile(E1, C1), compile(E2, C2),
-%  append(CEx1, [swap, const, X, swap, branch | C2], C2n),
-%  append(C2n, [const, Y, swap, const, 0, branch, label(X) | C1], C1n),
-%  append(C1n, [label(Y)], Commands).
-
-
-%interpret(if(Logic,If), EnvIn, EnvOut) :-
-compile(if(Logic, If), Commands) :-
+compile(ifelse(Logic, Ex1, Ex2), Commands) :-
   compile(Logic, CLogic),
-  compile(If, CIf),
-  append(CLogic, [swapd, const, X, swapa, branchz |CIf], S1),
-  append(S1, [label(X)], Commands).
+  compile(Ex1, CEx1),
+  compile(Ex2, CEx2),
+  JumpTrue = [swapa, const, Eq, swapa, branchz | CEx1],
+  JumpFalse = [const, Fin, jump, label(Eq) | CEx2 ],
+  Rest = [label(Fin)],
+  append(CLogic, JumpTrue, Elem1),
+  append(JumpFalse, Rest, Elem2),
+  append(Elem1, Elem2, Commands).
+
+compile(if(Logic, Ex1), Commands) :-
+  compile(Logic, CLogic),
+  compile(Ex1, CEx1),
+  JumpTrue = [swapa, const, Eq, swapa, branchz | CEx1],
+  JumpFalse = [label(Eq)],
+  append(CLogic, JumpTrue, Elem1),
+  append(Elem1, JumpFalse, Commands).
 
 compile(assign(Var, Val), [const, Var, swapa, const, Val, store]).
 
@@ -698,6 +707,7 @@ compile_or(or([H|T]), Commands) :-
   compile_or(or(T), CRest),
   append(C1, Next, S1),
   append(S1, CRest, Commands).
+
 % need to fix labels :)
 fix_labels([], _, []).
 fix_labels([H | T], N, [H | Tc]) :- var(H), !, N1 is N+1, fix_labels(T, N1, Tc).
