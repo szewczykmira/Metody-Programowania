@@ -606,8 +606,15 @@ compile(op("<>", Ex1, Ex2), Commands) :-
 %eval(or([H|_]), EnvIn, EnvOut, true) 
 compile(or([]), []).
 
-%eval(and([]), Env, Env, true) :- !.
 compile(and([]), []).
+compile(and([H|T]), Commands) :- 
+  compile(H, C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  compile_and(and(T), Commands1),
+  append(C1, Stack, S1),
+  append(Incr, Commands1, S2),
+  append(S1, S2, Commands).
 
 compile(iwrite(E), Commands) :-
   compile(E, C),
@@ -662,6 +669,17 @@ compile(block(Dec, Comp), Commands) :-
 
 compile(program(_, B), Commands) :-
   compile(B, Commands).
+
+compile_and(and([]), []).
+compile_and(and([H|T]), Commands) :-
+  compile(H, C1),
+  Next = [swapd, 
+  const, 0, swapa, load, swapd, swapa,
+  const, -1, add, swapa, swapd, load,
+  mul, store],
+  compile_and(and(T), CRest),
+  append(C1, Next, S1),
+  append(S1, CRest, Commands).
 
 % need to fix labels :)
 fix_labels([], _, []).
