@@ -603,8 +603,15 @@ compile(op("<>", Ex1, Ex2), Commands) :-
   append(C1, IF, I1),
   append(I1, Lt, Commands).
 
-%eval(or([H|_]), EnvIn, EnvOut, true) 
 compile(or([]), []).
+compile(or([H|T]), Commands) :- 
+  compile(H, C1),
+  save_acc_to_stack(Stack),
+  increase_stack(Incr),
+  compile_or(or(T), Commands1),
+  append(C1, Stack, S1),
+  append(Incr, Commands1, S2),
+  append(S1, S2, Commands).
 
 compile(and([]), []).
 compile(and([H|T]), Commands) :- 
@@ -681,6 +688,16 @@ compile_and(and([H|T]), Commands) :-
   append(C1, Next, S1),
   append(S1, CRest, Commands).
 
+compile_or(or([]), []).
+compile_or(or([H|T]), Commands) :-
+  compile(H, C1),
+  Next = [swapd, 
+  const, 0, swapa, load, swapd, swapa,
+  const, -1, add, swapa, swapd, load,
+  add, store],
+  compile_or(or(T), CRest),
+  append(C1, Next, S1),
+  append(S1, CRest, Commands).
 % need to fix labels :)
 fix_labels([], _, []).
 fix_labels([H | T], N, [H | Tc]) :- var(H), !, N1 is N+1, fix_labels(T, N1, Tc).
