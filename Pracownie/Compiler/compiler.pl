@@ -352,7 +352,7 @@ replace(Index, NVal, [(Index, _) | List], [(Index, NVal) | List]).
 replace(Index, NVal, [H | T], [H | Result]) :-
   replace(Index, NVal, T, Result).
 
-asm([], (A, _,_, _), _) :- write(A).
+asm([], (A, _,_, _), _) :- write(A), !.
 
 % NOP -- do nothing
 asm([nop | T], (ACC, AR, DR, MEM), History) :-
@@ -668,7 +668,10 @@ compile(if(Logic, Ex1), [next(["if"]) | Commands]) :-
   append(CLogic, JumpTrue, Elem1),
   append(Elem1, JumpFalse, Commands).
 
-compile(assign(Var, Val), [next(["assign"]), const, Var, swapa, const, Val, store]).
+compile(assign(Var, Val), [next(["assign"]) | Commands]) :-
+  compile(Val, CVal),
+  Rest = [swapa, const, Var, swapa, store],
+  append(CVal, Rest, Commands).
 
 compile([], []).
 compile([H|T], [next(["cc"]) | Commands]) :-
