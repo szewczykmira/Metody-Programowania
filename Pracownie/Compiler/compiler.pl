@@ -343,7 +343,7 @@ jump(Future, (ACC, AR, DR, MEM), History, Jump) :-
   skip(Jump, All,[], NHistory, NFuture),
   asm(NFuture, (ACC, AR, DR, MEM), NHistory).
 
-skip(0, P, H, H1, P) :- reverse(H, H1), !.
+skip(0, P, H, H, P):- !.
 skip(N, [H|T], Acc, History, Future) :- 
   N1 is N - 1, 
   skip(N1, T, [H | Acc], History, Future).
@@ -359,7 +359,8 @@ asm([nop | T], (ACC, AR, DR, MEM), History) :-
   !, asm(T, (ACC, AR, DR, MEM), [nop | History]).
 
 asm([next(Q) | T], (ACC, AR, DR, MEM), History) :-
-  !, asm(T, (ACC, AR, DR, MEM), [next(Q) |History]).
+  !, write(Q),nl, 
+  asm(T, (ACC, AR, DR, MEM), [next(Q) |History]).
 
 % SYSCALL (syscall(ACC))
 asm([syscall | _], (0, _, _, _), _) :- 
@@ -412,7 +413,7 @@ asm([jump | T], (ACC, AR, DR, MEM), History) :-
 
 % CONST (MEM[PC++] -> ACC)
 asm([const, N | T], (_, AR, DR, MEM), History) :- 
-  !, asm(T, (N, AR, DR, MEM), [const, N | History]).
+  !, asm(T, (N, AR, DR, MEM), [N, const | History]).
 
 % ADD (ACC + DR -> ACC)
 asm([add | T], (ACC, AR, DR, MEM), History) :- 
