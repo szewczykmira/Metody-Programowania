@@ -352,11 +352,14 @@ replace(Index, NVal, [(Index, _) | List], [(Index, NVal) | List]).
 replace(Index, NVal, [H | T], [H | Result]) :-
   replace(Index, NVal, T, Result).
 
-asm([], _, _).
+asm([], (A, _,_, _), _) :- write(A).
 
 % NOP -- do nothing
 asm([nop | T], (ACC, AR, DR, MEM), History) :-
   !, asm(T, (ACC, AR, DR, MEM), [nop | History]).
+
+asm([next(Q) | T], (ACC, AR, DR, MEM), History) :-
+  !, asm(T, (ACC, AR, DR, MEM), [next(Q) |History]).
 
 % SYSCALL (syscall(ACC))
 asm([syscall | _], (0, _, _, _), _) :- 
@@ -365,7 +368,7 @@ asm([syscall | T], (1, AR, DR, MEM), History) :-
   !, read(ACC), 
   asm(T, (ACC, AR, DR, MEM), [syscall | History]).
 asm([syscall | T], (2, AR, DR, MEM), History) :- 
-  !, write(DR), 
+  !, write(DR),nl, 
   asm(T, (2, AR, DR, MEM), [syscall | History]).
 
 % LOAD (MEM[AR] -> ACC)
@@ -444,14 +447,14 @@ compile(number(Arg), [const, Arg]).
 
 compile(variable(Var), [const, Var, swapa, load]).
 
-compile(-(Arg), Commands) :- 
+compile(-(Arg), [next([-, Arg]) | Commands]) :- 
   compile(Arg, C1), 
   append(C1, [swapd, const, -1, mul], Commands).
 
 compile(+(Arg), Commands) :- 
   compile(Arg, Commands). 
 
-compile(op("*", E1, E2), Commands) :- 
+compile(op("*", E1, E2), [next(["*", E1, E2]) | Commands]) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
@@ -469,7 +472,7 @@ compile(op("*", E1, E2), Commands) :-
   append(S3, S4, U2),
   append(U1, U2, Commands).
 
-compile(op("div", E1, E2), Commands) :- 
+compile(op("div", E1, E2), [next(["div", E1, E2]) | Commands]) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
@@ -487,7 +490,7 @@ compile(op("div", E1, E2), Commands) :-
   append(S3, S4, U2),
   append(U1, U2, Commands).
 
-compile(op("mod", E1, E2), Commands) :-
+compile(op("mod", E1, E2), [next(["mod", E1, E2]) | Commands]) :-
   compile(E1, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
@@ -512,7 +515,7 @@ compile(op("mod", E1, E2), Commands) :-
   append(S3, S4, U2),
   append(U1, U2, Commands).
 
-compile(op("+", E1, E2), Commands) :- 
+compile(op("+", E1, E2), [next(["+", E1, E2]) | Commands]) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
@@ -530,7 +533,7 @@ compile(op("+", E1, E2), Commands) :-
   append(S3, S4, U2),
   append(U1, U2, Commands).
 
-compile(op("-", E1, E2), Commands) :- 
+compile(op("-", E1, E2), [next(["-", E1, E2]) | Commands]) :- 
   compile(E1, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
@@ -548,7 +551,7 @@ compile(op("-", E1, E2), Commands) :-
   append(S3, S4, U2),
   append(U1, U2, Commands).
 
-compile(not(Arg), Commands) :-
+compile(not(Arg), [next(["not"]) | Commands]) :-
   compile(Arg, C1),
   IF = [swapa, const, EQ, swapa, branchz, const, 0, swapa,
   const, Fin, jump, label(EQ), const, 1, swapa, 
@@ -556,7 +559,7 @@ compile(not(Arg), Commands) :-
   append(C1, IF, Commands).
 
 % 1<=2 "1" / 1 <= 1 "0" / 2 <= 1 "-1"
-compile(op("<=", Ex1, Ex2), Commands) :-
+compile(op("<=", Ex1, Ex2), [next(["<=", Ex1, Ex2]) | Commands]) :-
   compile(op("-", Ex2, Ex1), C1),
   % if Acc < 0 then jump to LT,
   IF = [swapa, const, LT, swapa, branchn, const, 1, swapa ],
@@ -565,7 +568,7 @@ compile(op("<=", Ex1, Ex2), Commands) :-
   append(I1, Lt, Commands).
 
 % 1 >= 2 "-1" / 1 >= 1 "0" / 2 >= 1 "1"
-compile(op(">=", Ex1, Ex2), Commands) :-
+compile(op(">=", Ex1, Ex2), [next([">=", Ex1, Ex2])| Commands]) :-
   compile(op("-", Ex1, Ex2), C1),
   % if Acc < 0 then jump to LT,
   IF = [swapa, const, LT, swapa, branchn, const, 1, swapa ],
@@ -574,7 +577,7 @@ compile(op(">=", Ex1, Ex2), Commands) :-
   append(I1, Lt, Commands).
 
 % 1 > 2 "-1" / 1 > 1 "0" / 2 > 1 "1"
-compile(op(">", Ex1, Ex2), Commands) :-
+compile(op(">", Ex1, Ex2), [next([">", Ex1, Ex2] ) | Commands]) :-
   compile(op("-", Ex2, Ex1), C1),
   % if Acc < 0 then jump to LT,
   IF = [swapa, const, LT, swapa, branchn, const, 0, swapa],
@@ -584,7 +587,7 @@ compile(op(">", Ex1, Ex2), Commands) :-
   append(I1 , Lt, Commands).
 
 % 1 < 2 "-1" / 1 < 1 "0" / 2 > 1 "1"
-compile(op("<", Ex1, Ex2), Commands) :-
+compile(op("<", Ex1, Ex2), [next(["<", Ex1, Ex2]) | Commands]) :-
   compile(op("-", Ex1, Ex2), C1),
   % if Acc < 0 then jump to LT,
   IF = [swapa, const, LT, swapa, branchn, const, 0, swapa],
@@ -594,7 +597,7 @@ compile(op("<", Ex1, Ex2), Commands) :-
   append(I1, Lt, Commands).
 
 % 1 <> 2 "-1" / 1 <> 1 "0" / 2 <> 1 "1"
-compile(op("<>", Ex1, Ex2), Commands) :-
+compile(op("<>", Ex1, Ex2), [next(["<>", Ex1, Ex2]) |Commands]) :-
   compile(op("-", Ex1, Ex2), C1),
   % if Acc < 0 then jump to LT,
   IF = [swapa, const, LT, swapa, branchz, const, 1, swapa],
@@ -604,9 +607,9 @@ compile(op("<>", Ex1, Ex2), Commands) :-
   append(I1, Lt, Commands).
 
 compile(or([]), []).
-compile(or([H]), Commands) :-
+compile(or([H]), [next(["or"]) |Commands]) :-
   compile(H, Commands).
-compile(or([H|T]), Commands) :- 
+compile(or([H|T]), [next(["or"]) | Commands]) :- 
   compile(H, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
@@ -616,9 +619,9 @@ compile(or([H|T]), Commands) :-
   append(S1, S2, Commands).
 
 compile(and([]), []).
-compile(and([H]), Commands) :-
+compile(and([H]), [next(["and"]) | Commands]) :-
   compile(H, Commands).
-compile(and([H|T]), Commands) :- 
+compile(and([H|T]),[next(["and"]) |Commands]) :- 
   compile(H, C1),
   save_acc_to_stack(Stack),
   increase_stack(Incr),
@@ -627,19 +630,26 @@ compile(and([H|T]), Commands) :-
   append(Incr, Commands1, S2),
   append(S1, S2, Commands).
 
-compile(iwrite(E), Commands) :-
+compile(iwrite(E), [next(["write"]) | Commands]) :-
   compile(E, C),
   append(C, [swapd, const, 2, syscall], Commands).
 
-compile(iread(E), [const, E, swapa, const, 1, syscall, store]).
+compile(iread(E), [next(["read"]), const, E, swapa, const, 1, syscall, store]).
 
 %interpret(ireturn(Arg), EnvIn, _) :-
 
 %interpret(icall(A), EnvIn, EnvOut) :-
 
 %interpret(while(Logic, Compound), EnvIn, EnvOut) :-
+compile(while(Logic, Compound), [next(["while"]) | Commands]) :-
+  compile(Logic, CLogic),
+  compile(Compound, CCompound),
+  Fail = [swapa, const, Not, swapa, branchz, next(["compound"]) | CCompound],
+  Fin = [const, Beg, jump, label(Not)],
+  append([label(Beg) | CLogic], Fail, C1),
+  append(C1, Fin, Commands).
 
-compile(ifelse(Logic, Ex1, Ex2), Commands) :-
+compile(ifelse(Logic, Ex1, Ex2), [next(["ifelse"]) |Commands]) :-
   compile(Logic, CLogic),
   compile(Ex1, CEx1),
   compile(Ex2, CEx2),
@@ -650,7 +660,7 @@ compile(ifelse(Logic, Ex1, Ex2), Commands) :-
   append(JumpFalse, Rest, Elem2),
   append(Elem1, Elem2, Commands).
 
-compile(if(Logic, Ex1), Commands) :-
+compile(if(Logic, Ex1), [next(["if"]) | Commands]) :-
   compile(Logic, CLogic),
   compile(Ex1, CEx1),
   JumpTrue = [swapa, const, Eq, swapa, branchz | CEx1],
@@ -658,10 +668,10 @@ compile(if(Logic, Ex1), Commands) :-
   append(CLogic, JumpTrue, Elem1),
   append(Elem1, JumpFalse, Commands).
 
-compile(assign(Var, Val), [const, Var, swapa, const, Val, store]).
+compile(assign(Var, Val), [next(["assign"]), const, Var, swapa, const, Val, store]).
 
 compile([], []).
-compile([H|T], Commands) :-
+compile([H|T], [next(["cc"]) | Commands]) :-
   compile(H, HCommands),
   compile(T, TCommands),
   append(HCommands, TCommands, Commands).
@@ -714,14 +724,11 @@ fix_labels([H | T], N, [H | Tc]) :- var(H), !, N1 is N+1, fix_labels(T, N1, Tc).
 fix_labels([label(V) | T], N, Tc) :- !, V = N, fix_labels(T, N, Tc).
 fix_labels([H | T], N, [H | Tc]) :- N1 is N+1, fix_labels(T, N1, Tc).
 
-debug_print([], _):-!.
-debug_print(_, []):-!.
-debug_print([H|T], [Hh | Tt]) :-
-  write(H >> Hh), nl,
-  debug_print(T, Tt).
+pretty([]):-!.
+pretty([next(A)|T]) :- nl, write(A), nl, pretty(T).
+pretty([H|T]) :- write(H), nl, pretty(T).
 
 program(Ast, Compiled) :-
   compile(Ast, LwL),!,
   Full = [const, 0, swapa, const, 1, store | LwL],
   fix_labels(Full, 0, Compiled).
-  %debug_print(Full, Compiled).
