@@ -211,3 +211,4 @@ pip-log.txt
 #Translations
 *.mo
 
+Pracownie/Compiler/some_interpreter.pl
