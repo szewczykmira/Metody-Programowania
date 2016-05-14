@@ -151,7 +151,7 @@ declarations(declarations([])) --> [].
 
 % block
 block(block(A,I)) --> declarations(A), white_space, !, "begin", white_space, compound_instruction(I), white_space, "end".
-block(block([], I)) --> "begin", white_space, compound_instruction(I), white_space, "end".
+block(block(declarations([]), I)) --> "begin", white_space, compound_instruction(I), white_space, "end".
 
 % program
 program(program(Id, B)) --> "program", white_space, identifier(Id), white_space, block(B).
@@ -365,7 +365,7 @@ asm([next(Q) | T], (ACC, AR, DR, MEM), History) :-
 
 % SYSCALL (syscall(ACC))
 asm([syscall | _], (0, _, _, _), _) :-
-  !, print(aborting), nl, abort.
+  !, abort.
 asm([syscall | T], (1, AR, DR, MEM), History) :-
   !, read(ACC),
   asm(T, (ACC, AR, DR, MEM), [syscall | History]).
@@ -375,7 +375,9 @@ asm([syscall | T], (2, AR, DR, MEM), History) :-
 
 % LOAD (MEM[AR] -> ACC)
 asm([load | T], (_, AR, DR, MEM), History) :-
-  !, member((AR, Val), MEM), !,
+  !,
+  %print(memory(MEM)), nl,
+  member((AR, Val), MEM), !,
   asm(T, (Val, AR, DR, MEM), [load |History]).
 
 % STORE (ACC -> MEM[AR])
@@ -445,20 +447,21 @@ save_acc_to_stack([swapd, const, evalstack, swapa, load, swapa, swapd, store]).
 
 %% COMPILER
 
-zip_args([], []):-!.
-zip_args([H|T], Commands) :-
+zip_args([], [], _):-!.
+zip_args([H|T], Commands, Offset) :-
   compile(H, H1),
-  length(T, LT),
+  O1 is Offset - 1,
+  LT1 is Offset - 2,
   HCommands = [swapd, % push RESULT to ACC_D
     const, funcstack, swapa, load, % load FS to ACC
     swapd, % now ACC has RESULT, ACC_D has FS
     swapa, % RESULT -> ACC_A
-    const, LT, % ACC = LT
+    const, LT1, % ACC = LT
     swapd, % ACC = FS, ACC_D = LT
-    sub, % ACC = FS - LT
+    add, % ACC = FS + OFFSET - LT
     swapa, store % store RESULT in $(FS-LT)
     ],
-  zip_args(T, TCommands),
+  zip_args(T, TCommands, O1),
   append(H1, HCommands, HCom),
   append(HCom, TCommands, Commands).
 
@@ -472,17 +475,17 @@ compile(p_call(ID, AArgs), Commands) :-
   % RP
   % FArgs
   % LVars
+  %% evaluate AArgs, save results to stack (FArgs)
   length(FArgs, LFA),
   (LAA = LFA ; (print(bad_function_arguments(FArgs, AArgs)), abort)),
   Allocate is 1 + LFA + LVars,
-  Commands = [const, funcstack, swapa, load, swapd, const, Allocate,
-  add, store | SLbl],
+  zip_args(AArgs, ZipCom, Allocate),
+  Com = [const, funcstack, swapa, load, swapd, const, Allocate,
+    add, store | SLbl],
   %% set RP to label X
   SLbl = [const, funcstack, swapa, load,
-  swapd, const, -1, add,
-  swapa, const, X, store | W1],
-  %% evaluate AArgs, save results to stack (FArgs)
-  zip_args(AArgs, ZipCom),
+    swapd, const, -1, add,
+    swapa, const, X, store | Jmp],
   %% jump to Label
   Jmp = [const, function_jump(ID), jump | Lbl],
   %% Label(X)
@@ -492,7 +495,7 @@ compile(p_call(ID, AArgs), Commands) :-
     const, Allocate, swapd, sub, store | CopyRV],
   %% copy RV to ACC
   CopyRV = [const, rv, swapa, load],
-  append(ZipCom, Jmp, W1).
+  append(ZipCom, Com, Commands).
 
 compile(p_call(ID, _), _) :- print(function_by_id_not_found(ID)), abort.
 
@@ -701,8 +704,8 @@ compile(ireturn(Arg), Commands) :-
   compile(Arg, CArg),
   Com = [swapa, const, rv, swapa, store | ReadRP],
   %% Jump to RP (StackPointer - 1)
-  ReadRP = [const, funcstack,swapa, load, swapd,
-  const, -1, add, jump],
+  ReadRP = [const, funcstack, swapa, load, swapd,
+  const, -1, add, swapa, load, jump],
   append(CArg, Com, Commands).
 
 compile(icall(A), Commands) :- compile(A, Commands).
@@ -758,7 +761,8 @@ compile([H|T], Commands) :-
 compile(block(Dec, Comp), Commands) :-
   compile(Dec, C1, Functions),
   compile(Comp, C2),
-  C2a = [const, 0, syscall],
+  ( inside_proc(_, _), !, C2a = []
+  ; C2a = [const, 0, syscall]),
   compile_functions(Functions, C3),
   append(C1, C2, C12),
   append(C12, C2a, C12a),
@@ -806,6 +810,7 @@ find_arg(Elem, [_|T], N, E) :-
   N1 is N + 1,
   find_arg(Elem, T, N1, E).
 
+extract_locals([], []).
 extract_locals(declarations([]), []).
 extract_locals(block(H, _), Loc) :-
   extract_locals(H, Loc).
@@ -821,15 +826,12 @@ compile_functions([procedure(Id, FA, Body)|T], Commands) :-
   % Compile Body, knowing that local variables and function arguments should be loaded from stack, not global variables
   compile(Body, CBody),
   % set RV to 0
-  SetRV = [const, rv, swapa, const, 0, store | JumpRP],
-  % jump to RP
-  JumpRP = [const, funcstack, swapa, load, swapd,
-  const, -1, add, jump],
+  compile(ireturn(+number(0)), ReturnCmds),
   retractall(inside_proc(_, _)),
   compile_functions(T, C2),
   append(C1, CBody, S1),
-  append(SetRV, C2, S2),
-  append(S1, S2, Commands).
+  append(S1, ReturnCmds, Function),
+  append(Function, C2, Commands).
 
 compile_and(and([]), []).
 compile_and(and([H|T]), Commands) :-
@@ -941,7 +943,7 @@ pretty_print(ifelse(Logic,Then,Else), N) :-
   indent(N), write("else"), nl,
   pretty_print(Else, N1).
 pretty_print(if(Logic,Then), N) :-
-  indent(N), write("if "), pretty_print(Logic),
+  indent(N), write("if "), pretty_print(Logic), nl,
   N1 is N+2,
   indent(N), write("then"), nl,
   pretty_print(Then, N1).
@@ -973,7 +975,7 @@ pretty_print(program(Name, B), N) :-
   indent(N), write("program "), write(Name), nl,
   pretty_print(B, N).
 
-pretty_print_syscall(0) :- write(abort).
+pretty_print_syscall(0) :- write(abort), write("!!!").
 pretty_print_syscall(1) :- write(read).
 pretty_print_syscall(2) :- write(write).
 
