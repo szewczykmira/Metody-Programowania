@@ -463,6 +463,7 @@ zip_args([H|T], Commands) :-
   append(HCom, TCommands, Commands).
 
 :- dynamic proc/4.
+:- dynamic inside_proc/2.
 
 compile(p_call(ID, AArgs), Commands) :-
   proc(ID, FArgs, LVars, Label), !,
@@ -496,6 +497,15 @@ compile(p_call(ID, AArgs), Commands) :-
 compile(p_call(ID, _), _) :- print(function_by_id_not_found(ID)), abort.
 
 compile(number(Arg), [const, Arg]).
+
+compile(variable(Var), Commands) :-
+  inside_proc(FArg, LVal),
+  append(FArg, LVal, AllArg),
+  member(Var, AllArg),!,
+  find_arg(Var, AllArg, 1, P),
+  P1 is P + 1, 
+  Commands = [const, funcstack, swapa, load,
+  swapd, const, P1, swapd, sub, swapa, load].
 
 compile(variable(Var), [const, Var, swapa, load]).
 
@@ -725,6 +735,17 @@ compile(if(Logic, Ex1), Commands) :-
   append(Elem1, JumpFalse, Commands).
 
 compile(assign(Var, Val), Commands) :-
+  inside_proc(FArg, LVal),
+  append(FArg, LVal, AllArgs),
+  member(Var, AllArgs), !,
+  find_arg(Var, AllArgs, 1, P),
+  compile(Val, CVal),
+  P1 is P + 1,
+  Assign = [swapd, const, funcstack, swapa, load,
+  swapd, swapa, const, P1, swapd, sub, swapa, store],
+  append(CVal, Assign, Commands).
+
+compile(assign(Var, Val), Commands) :-
   compile(Val, CVal),
   Rest = [swapa, const, Var, swapa, store],
   append(CVal, Rest, Commands).
@@ -753,29 +774,54 @@ compile(declarations([H|T]), Commands, Functions) :-
   append(Ch, Ct, Commands).
 
 compile(local([]), [], []).
+compile(local([value(H) | T]), Commands, []) :-
+  inside_proc(FormArg, LVars), !,
+  length(FormArg, LFormArg),
+  compile(local(T), TCommands, []),
+  find_arg(H, LVars, 1, Place),
+  Sub is LFormArg + Place + 1,
+  Commands = [const, funstack, swapa, load, swapd, const,
+  Sub, swapd, sub, swapa, const, 0, store | TCommands].
+
 compile(local([value(H)|T]),
   [const, H, swapa, const, 0, store | Commands],
   []) :-
   compile(local(T), Commands).
 
 compile(procedure(ID, FA, B), [], [procedure(ID, FA, B, X)]) :-
-  extract_locals(B, Loc),
+  extract_locals(B, LLoc),
+  length(LLoc, Loc),
   asserta(proc(ID, FA, Loc, X)).
 
-extract_locals(block([], _), 0).
+find_arg(Elem, List, _, _) :- 
+  \+ member(Elem, List),!, abort.
+find_arg(Elem, [Elem|_], N, N).
+find_arg(Elem, [_|T], N, E) :- 
+  N1 is N + 1,
+  find_arg(Elem, T, N1, E).
+
+extract_locals(block([], _), []).
 extract_locals(block([locals(H) | T], _), Sum) :-
-  length(H, HSum),
   extract_locals(block(T, _), TSum),
-  Sum is HSum + TSum.
+  append(H, TSum, Sum).
 
 compile_functions([], []).
-compile_functions([procedure(ID, FA, Body, Label)|T], Commands) :-
+compile_functions([procedure(_, FA, Body, Label)|T], Commands) :-
   C1 = [label(Label)],
+  extract_locals(Body, LV),
+  asserta(inside_proc(FA, LV)),
   % Compile Body, knowing that local variables and function arguments should be loaded from stack, not global variables
+  compile(Body, CBody),
   % set RV to 0
+  SetRV = [const, rv, swapa, const, 0, store | JumpRP],
   % jump to RP
+  JumpRP = [const, funstack, swapa, load, swapd,
+  const, -1, add, jump],
+  retractall(inside_proc(_, _)),
   compile_functions(T, C2),
-  append(C1, C2, Commands).
+  append(C1, CBody, S1),
+  append(SetRV, C2, S2),
+  append(S1, S2, Commands).
 
 compile_and(and([]), []).
 compile_and(and([H|T]), Commands) :-
