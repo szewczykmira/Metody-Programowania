@@ -172,7 +172,7 @@ parse_args([value(Fh)|Ft], [Rh|Rt], EnvIn, EnvOut) :-
   append([(value, Fh, Val)], EnvOut2, EnvOut).
 parse_args([name(_)|Ft], [_|Rt], EnvIn, EnvOut) :-
   parse_args(Ft, Rt, EnvIn, EnvOut), !,
-  print("Not handling call-by-name"),
+  write("Not handling call-by-name"), nl,
   abort.
 
 retract_local_args([eof | EnvOut], EnvOut) :- !.
@@ -181,7 +181,7 @@ retract_local_args([_ | EnvOut1], EnvOut) :-
 
 :- dynamic(returns/2).
 eval(p_call(Id, Ra), EnvIn, RealEnvOut, Val) :-
-  member((procedure, Id, Fa, B), EnvIn),
+  member((procedure, Id, Fa, B), EnvIn), !,
   parse_args(Fa, Ra, EnvIn, EnvOut1),
   ( (interpret(B, EnvOut1, EnvOut), Val = 0)
   ; (returns(EnvOut, Val), !, retractall(returns(_, _)))),!,
@@ -349,7 +349,7 @@ skip(N, [H|T], Acc, History, Future) :-
   N1 is N - 1,
   skip(N1, T, [H | Acc], History, Future).
 
-replace(Index, NVal, [(Index, _) | List], [(Index, NVal) | List]).
+replace(Index, NVal, [(Index, _) | List], [(Index, NVal) | List]) :- !.
 replace(Index, NVal, [H | T], [H | Result]) :-
   replace(Index, NVal, T, Result).
 
@@ -365,7 +365,7 @@ asm([next(Q) | T], (ACC, AR, DR, MEM), History) :-
 
 % SYSCALL (syscall(ACC))
 asm([syscall | _], (0, _, _, _), _) :-
-  !, abort.
+  !, print(aborting), nl, abort.
 asm([syscall | T], (1, AR, DR, MEM), History) :-
   !, read(ACC),
   asm(T, (ACC, AR, DR, MEM), [syscall | History]).
@@ -375,7 +375,7 @@ asm([syscall | T], (2, AR, DR, MEM), History) :-
 
 % LOAD (MEM[AR] -> ACC)
 asm([load | T], (_, AR, DR, MEM), History) :-
-  !, member((AR, Val), MEM),
+  !, member((AR, Val), MEM), !,
   asm(T, (Val, AR, DR, MEM), [load |History]).
 
 % STORE (ACC -> MEM[AR])
@@ -383,7 +383,7 @@ asm([store | T], (ACC, AR, DR, MEM), History) :-
   \+ member((AR,_), MEM),
   !, asm(T, (ACC, AR, DR, [(AR, ACC) | MEM]), [store | History]).
 asm([store | T], (ACC, AR, DR, MEM), History) :-
-  !, replace(AR, ACC, MEM, Result),
+  !, replace(AR, ACC, MEM, Result), !,
   asm(T, (ACC, AR, DR, Result), [store | History]).
 
 % SWAPA (ACC <-> AR)
@@ -439,7 +439,7 @@ asm([div | T], (ACC, AR, DR, MEM), History) :-
 
 % We are assuming that every evaluation result is finishing in ACC
 
-increase_stack([const, evalstack, swapa, load, swapd, const, 1, add, swapd, const, 0, swapa, swapd, store]).
+increase_stack([const, evalstack, swapa, load, swapd, const, 1, add, swapd, const, evalstack, swapa, swapd, store]).
 decrease_stack([const, evalstack, swapa, load, swapd, const, -1, add, swapd, const, evalstack, swapa, swapd, store]).
 save_acc_to_stack([swapd, const, evalstack, swapa, load, swapa, swapd, store]).
 
@@ -462,18 +462,18 @@ zip_args([H|T], Commands) :-
   append(H1, HCommands, HCom),
   append(HCom, TCommands, Commands).
 
-:- dynamic proc/4.
+:- dynamic proc/3.
 :- dynamic inside_proc/2.
 
 compile(p_call(ID, AArgs), Commands) :-
-  proc(ID, FArgs, LVars, Label), !,
+  proc(ID, FArgs, LVars), !,
   length(AArgs, LAA),
   %% allocate function stack frame
   % RP
   % FArgs
   % LVars
   length(FArgs, LFA),
-  ((LAA = LFA ; (print(bad_function_arguments(FArgs, AArgs), abort)))),
+  (LAA = LFA ; (print(bad_function_arguments(FArgs, AArgs)), abort)),
   Allocate is 1 + LFA + LVars,
   Commands = [const, funcstack, swapa, load, swapd, const, Allocate,
   add, store | SLbl],
@@ -484,11 +484,11 @@ compile(p_call(ID, AArgs), Commands) :-
   %% evaluate AArgs, save results to stack (FArgs)
   zip_args(AArgs, ZipCom),
   %% jump to Label
-  Jmp = [const, Label, jump | Lbl],
+  Jmp = [const, function_jump(ID), jump | Lbl],
   %% Label(X)
   Lbl = [label(X) | Deall],
   %% deallocate stack frame
-  Deall = [const, funstack, swapa, load, swapd,
+  Deall = [const, funcstack, swapa, load, swapd,
     const, Allocate, swapd, sub, store | CopyRV],
   %% copy RV to ACC
   CopyRV = [const, rv, swapa, load],
@@ -499,15 +499,15 @@ compile(p_call(ID, _), _) :- print(function_by_id_not_found(ID)), abort.
 compile(number(Arg), [const, Arg]).
 
 compile(variable(Var), Commands) :-
-  inside_proc(FArg, LVal),
+  inside_proc(FArg, LVal), !,
   append(FArg, LVal, AllArg),
-  member(Var, AllArg),!,
-  find_arg(Var, AllArg, 1, P),
-  P1 is P + 1, 
+  find_arg(Var, AllArg, 1, P), !,
+  P1 is P + 1,
   Commands = [const, funcstack, swapa, load,
   swapd, const, P1, swapd, sub, swapa, load].
 
-compile(variable(Var), [const, Var, swapa, load]).
+compile(variable(Var), [const, Var, swapa, load]) :-
+  write(variable(Var)), write(" outside func."), nl.
 
 compile(-(Arg), Commands) :-
   compile(Arg, C1),
@@ -667,7 +667,7 @@ compile(op("<>", Ex1, Ex2), Commands) :-
   append(I1, Lt, Commands).
 
 compile(or([]), []).
-compile(or([H]), Commands) :-
+compile(or([H]), Commands) :- !,
   compile(H, Commands).
 compile(or([H|T]), Commands) :-
   compile(H, C1),
@@ -679,7 +679,7 @@ compile(or([H|T]), Commands) :-
   append(S1, S2, Commands).
 
 compile(and([]), []).
-compile(and([H]), Commands) :-
+compile(and([H]), Commands) :- !,
   compile(H, Commands).
 compile(and([H|T]),Commands) :-
   compile(H, C1),
@@ -701,7 +701,7 @@ compile(ireturn(Arg), Commands) :-
   compile(Arg, CArg),
   Com = [swapa, const, rv, swapa, store | ReadRP],
   %% Jump to RP (StackPointer - 1)
-  ReadRP = [const, funcstack,swapa, load, swapd, 
+  ReadRP = [const, funcstack,swapa, load, swapd,
   const, -1, add, jump],
   append(CArg, Com, Commands).
 
@@ -737,8 +737,7 @@ compile(if(Logic, Ex1), Commands) :-
 compile(assign(Var, Val), Commands) :-
   inside_proc(FArg, LVal),
   append(FArg, LVal, AllArgs),
-  member(Var, AllArgs), !,
-  find_arg(Var, AllArgs, 1, P),
+  find_arg(Var, AllArgs, 1, P), !,
   compile(Val, CVal),
   P1 is P + 1,
   Assign = [swapd, const, funcstack, swapa, load,
@@ -759,9 +758,11 @@ compile([H|T], Commands) :-
 compile(block(Dec, Comp), Commands) :-
   compile(Dec, C1, Functions),
   compile(Comp, C2),
+  C2a = [const, 0, syscall],
   compile_functions(Functions, C3),
   append(C1, C2, C12),
-  append(C12, C3, Commands).
+  append(C12, C2a, C12a),
+  append(C12a, C3, Commands).
 
 compile(program(_, B), Commands) :-
   compile(B, Commands).
@@ -769,45 +770,52 @@ compile(program(_, B), Commands) :-
 compile(declarations([]), [], []).
 compile(declarations([H|T]), Commands, Functions) :-
   compile(H, Ch, F),
-  compile(T, Ct, Fs),
+  compile(declarations(T), Ct, Fs),
   append(F, Fs, Functions),
   append(Ch, Ct, Commands).
 
 compile(local([]), [], []).
-compile(local([value(H) | T]), Commands, []) :-
+compile(local([H | T]), Commands, []) :-
   inside_proc(FormArg, LVars), !,
   length(FormArg, LFormArg),
   compile(local(T), TCommands, []),
   find_arg(H, LVars, 1, Place),
   Sub is LFormArg + Place + 1,
-  Commands = [const, funstack, swapa, load, swapd, const,
+  Commands = [const, funcstack, swapa, load, swapd, const,
   Sub, swapd, sub, swapa, const, 0, store | TCommands].
 
-compile(local([value(H)|T]),
+compile(local([H|T]),
   [const, H, swapa, const, 0, store | Commands],
   []) :-
-  compile(local(T), Commands).
+  compile(local(T), Commands, []).
 
-compile(procedure(ID, FA, B), [], [procedure(ID, FA, B, X)]) :-
+compile(procedure(ID, FA, B), [],
+  [procedure(ID, FA, B)]) :-
   extract_locals(B, LLoc),
   length(LLoc, Loc),
-  asserta(proc(ID, FA, Loc, X)).
+  asserta(proc(ID, FA, Loc)).
 
-find_arg(Elem, List, _, _) :- 
-  \+ member(Elem, List),!, abort.
-find_arg(Elem, [Elem|_], N, N).
-find_arg(Elem, [_|T], N, E) :- 
+find_arg(Elem, [], _, _) :-
+  write("Argument "), write(Elem), write(" not in scope."),
+  nl,
+  fail.
+find_arg(Elem, [Elem|_], N, N) :- !.
+find_arg(Elem, [value(Elem)|_], N, N) :- !.
+find_arg(Elem, [name(Elem)|_], N, N) :- !.
+find_arg(Elem, [_|T], N, E) :-
   N1 is N + 1,
   find_arg(Elem, T, N1, E).
 
-extract_locals(block([], _), []).
-extract_locals(block([locals(H) | T], _), Sum) :-
-  extract_locals(block(T, _), TSum),
+extract_locals(declarations([]), []).
+extract_locals(block(H, _), Loc) :-
+  extract_locals(H, Loc).
+extract_locals(declarations([local(H) | T]), Sum) :-
+  extract_locals(declarations(T), TSum),
   append(H, TSum, Sum).
 
 compile_functions([], []).
-compile_functions([procedure(_, FA, Body, Label)|T], Commands) :-
-  C1 = [label(Label)],
+compile_functions([procedure(Id, FA, Body)|T], Commands) :-
+  C1 = [next(function(Id)), function_label(Id)],
   extract_locals(Body, LV),
   asserta(inside_proc(FA, LV)),
   % Compile Body, knowing that local variables and function arguments should be loaded from stack, not global variables
@@ -815,7 +823,7 @@ compile_functions([procedure(_, FA, Body, Label)|T], Commands) :-
   % set RV to 0
   SetRV = [const, rv, swapa, const, 0, store | JumpRP],
   % jump to RP
-  JumpRP = [const, funstack, swapa, load, swapd,
+  JumpRP = [const, funcstack, swapa, load, swapd,
   const, -1, add, jump],
   retractall(inside_proc(_, _)),
   compile_functions(T, C2),
@@ -846,13 +854,150 @@ compile_or(or([H|T]), Commands) :-
   append(S1, CRest, Commands).
 
 % need to fix labels :)
-fix_labels([], _, []).
-fix_labels([H | T], N, [H | Tc]) :- var(H), !, N1 is N+1, fix_labels(T, N1, Tc).
-fix_labels([label(V) | T], N, Tc) :- !, V = N, fix_labels(T, N, Tc).
-fix_labels([H | T], N, [H | Tc]) :- N1 is N+1, fix_labels(T, N1, Tc).
+fix_labels([], _, [], []).
+fix_labels([H | T], N, [H | Tc], X) :- var(H), !, N1 is N+1, fix_labels(T, N1, Tc, X).
+fix_labels([function_label(V) | T], N, Tc, [(V, N)|Rs]) :-
+  !, fix_labels(T, N, Tc, Rs).
+fix_labels([label(V) | T], N, Tc, X) :- !,
+  V = N, fix_labels(T, N, Tc, X).
+fix_labels([H | T], N, [H | Tc], X) :- N1 is N+1,
+  fix_labels(T, N1, Tc, X).
+
+fix_func_jumps([], _, []).
+fix_func_jumps([function_jump(ID)|T], Ls, [V|T1]) :-
+  fix_func_jumps(T, Ls, T1),
+  member((ID, V), Ls).
+fix_func_jumps([H|T], Ls, [H|T1]) :- fix_func_jumps(T, Ls, T1).
 
 program(Ast, Compiled) :-
   compile(Ast, LwL),!,
   Full = [const, evalstack, swapa, const, 8193, store,
- const, funcstack, swapa, const, 16384, store | LwL],
-  fix_labels(Full, 0, Compiled).
+ const, funcstack, swapa, const, 16384, store, next("__main__") | LwL],
+  fix_labels(Full, 0, LwPL, Ls),
+  fix_func_jumps(LwPL, Ls, Compiled),
+  !.
+
+indent(0) :- !.
+indent(N) :- write(" "), N1 is N-1, indent(N1).
+pretty_print(Pr) :- pretty_print(Pr, 0).
+
+pretty_print_args([H]) :- pretty_print(H).
+pretty_print_args([H, H1|T]) :- pretty_print(H), write(", "),
+  pretty_print_args([H1|T]).
+pretty_print(p_call(Id, Ra), _) :- write(Id),
+  write("("), pretty_print_args(Ra), write(")").
+pretty_print(number(Arg), _) :- write(Arg).
+pretty_print(variable(Var), _) :- write(Var).
+pretty_print(-(Arg), _) :- write(-), pretty_print(Arg).
+pretty_print(+(Arg), _) :- pretty_print(Arg).
+pretty_print(op("div", Var1, Var2), _) :- !,
+  write("("),
+  pretty_print(Var1),
+  write(")"), write(" / "), write("("),
+  pretty_print(Var2),
+  write(")").
+pretty_print(op("mod", Var1, Var2), _) :- !,
+  write("("),
+  pretty_print(Var1),
+  write(")"), write(" % "), write("("),
+  pretty_print(Var2),
+  write(")").
+pretty_print(op(X, Var1, Var2), _) :-
+  write("("),
+  pretty_print(Var1),
+  write(")"), write(X), write("("),
+  pretty_print(Var2),
+  write(")").
+pretty_print(not(A), _) :- write(not),
+  write(" "),
+  pretty_print(A), write(" ").
+pretty_print(or([H]), _) :- pretty_print(H).
+pretty_print(or([H, H2|T]), _) :-
+  pretty_print(H),
+  write(" | "),
+  pretty_print(or([H2|T])).
+pretty_print(and([H]), _) :- pretty_print(H).
+pretty_print(and([H, H2|T]), _) :-
+  pretty_print(H),
+  write(" & "),
+  pretty_print(or([H2|T])).
+pretty_print(iwrite(Arg), N) :-
+  indent(N), write("write "), pretty_print(Arg), nl.
+pretty_print(iread(Arg), N) :-
+  indent(N), write("read "), pretty_print(Arg), nl.
+pretty_print(ireturn(Arg), N) :-
+  indent(N), write("return "), pretty_print(Arg), nl.
+pretty_print(icall(A), N) :-
+  indent(N), pretty_print(A).
+pretty_print(while(Logic, Compound), N) :-
+  indent(N), write("while "), pretty_print(Logic), nl,
+  N1 is N+2,
+  pretty_print(Compound, N1).
+pretty_print(ifelse(Logic,Then,Else), N) :-
+  indent(N), write("if "), pretty_print(Logic),
+  N1 is N+2,
+  indent(N), write("then"), nl,
+  pretty_print(Then, N1),
+  indent(N), write("else"), nl,
+  pretty_print(Else, N1).
+pretty_print(if(Logic,Then), N) :-
+  indent(N), write("if "), pretty_print(Logic),
+  N1 is N+2,
+  indent(N), write("then"), nl,
+  pretty_print(Then, N1).
+pretty_print(assign(Var, Val), N) :-
+  indent(N), write(Var), write(" := "), pretty_print(Val), nl.
+pretty_print([], _).
+pretty_print([H|T], N) :-
+  pretty_print(H, N),
+  pretty_print(T, N).
+pretty_print(declarations([]), _).
+pretty_print(declarations([H|T]), N) :-
+  pretty_print(H, N),
+  pretty_print(T, N).
+pretty_print(local(Vars), N) :-
+  indent(N), write("local "), write(Vars),nl.
+pretty_print(procedure(Id, FA, B), N) :-
+  indent(N), write("procedure "), write(Id), write(" ("),
+  write(FA), write(")"), nl,
+  N1 is N+2,
+  pretty_print(B, N1).
+pretty_print(block(Dec, Ci), N) :-
+  indent(N), write("with"), nl,
+  N1 is N+2,
+  pretty_print(Dec, N1),
+  indent(N), write("begin"), nl,
+  pretty_print(Ci, N1),
+  indent(N), write("end"), nl.
+pretty_print(program(Name, B), N) :-
+  indent(N), write("program "), write(Name), nl,
+  pretty_print(B, N).
+
+pretty_print_syscall(0) :- write(abort).
+pretty_print_syscall(1) :- write(read).
+pretty_print_syscall(2) :- write(write).
+
+pretty_print_asm(A) :- pretty_print_asm(A, 0).
+pretty_print_num(N) :- format('~4d: ', N).
+pretty_print_asm([], _).
+pretty_print_asm([const, X, syscall | T], N) :- !,
+  pretty_print_num(N),
+  N1 is N+3,
+  indent(2), pretty_print_syscall(X), nl,
+  pretty_print_asm(T, N1).
+pretty_print_asm([const, X | T], N) :- !,
+  pretty_print_num(N),
+  N1 is N+2,
+  indent(2), write(const), write(" "), write(X), nl,
+  pretty_print_asm(T, N1).
+pretty_print_asm([label(Q) | T], N) :- !,
+  pretty_print_num(N), N1 is N+1,
+  indent(0), write(label), write(" "), write(Q), nl,
+  pretty_print_asm(T, N1).
+pretty_print_asm([next(Q) | T], N) :- !,
+  pretty_print_num(N), N1 is N+1,
+  indent(0), write(next), write(" "), write(Q), nl,
+  pretty_print_asm(T, N1).
+pretty_print_asm([H|T], N) :-
+  pretty_print_num(N), N1 is N+1,
+  indent(2), write(H), nl, pretty_print_asm(T, N1).
