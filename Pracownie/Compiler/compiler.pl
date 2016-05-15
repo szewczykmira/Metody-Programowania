@@ -6,10 +6,12 @@
 smt --> [_], smt.
 smt --> [].
 comment --> "(*", smt, "*)",!.
-white --> [C],{code_type(C, space) },!, white.
+truly_white_space --> [C], { code_type(C, space) }.
+white --> truly_white_space,!, white.
 white --> [].
-white_space --> [C], {code_type(C,space)},white,!.
-white_space --> comment.
+white_space --> comment, !, white_space.
+white_space --> truly_white_space, !, white_space.
+white_space --> [].
 white_or_blank --> white_space, !.
 white_or_blank --> [].
 
@@ -1048,7 +1050,7 @@ unique_variables(iwrite(Arg), VariableList, iwrite(NewArg)) :-
   unique_variables(Arg, VariableList, NewArg).
 
 unique_variables(iread(Arg), VariableList, iread(NewArg)) :-
-  unique_variables(Arg, VariableList, NewArg).
+  member((Arg, NewArg), VariableList).
 
 unique_variables(ireturn(Arg), VariableList, ireturn(NewArg)) :-
   unique_variables(Arg, VariableList, NewArg).
@@ -1193,7 +1195,7 @@ to_binary([Num | T], [Num | BT]) :-
 to_binary([Num | T], [RNum | BT]) :-
   number(Num),
   Num < 0, !,
-  RNum is 65535 + Num,
+  RNum is 65536 + Num,
   to_binary(T, BT).
 
 % main program
