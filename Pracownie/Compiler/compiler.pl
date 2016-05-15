@@ -857,6 +857,8 @@ compile_or(or([H|T]), Commands) :-
 
 % need to fix labels :)
 fix_labels([], _, [], []).
+fix_labels([next(_)|T], N, Tc, X) :-
+  fix_labels(T, N, Tc, X).
 fix_labels([H | T], N, [H | Tc], X) :- var(H), !, N1 is N+1, fix_labels(T, N1, Tc, X).
 fix_labels([function_label(V) | T], N, Tc, [(V, N)|Rs]) :-
   !, fix_labels(T, N, Tc, Rs).
@@ -872,7 +874,8 @@ fix_func_jumps([function_jump(ID)|T], Ls, [V|T1]) :-
 fix_func_jumps([H|T], Ls, [H|T1]) :- fix_func_jumps(T, Ls, T1).
 
 program(Ast, Compiled) :-
-  compile(Ast, LwL),!,
+  unique_variables(Ast, UAst),
+  compile(UAst, LwL),!,
   Full = [const, evalstack, swapa, const, 8193, store,
  const, funcstack, swapa, const, 16384, store, next("__main__") | LwL],
   fix_labels(Full, 0, LwPL, Ls),
@@ -1077,17 +1080,17 @@ unique_variables([H|T], VariableList, [NH | NT]) :-
   unique_variables(T, VariableList, NT).
 
 unique_variables(program(Id, Block), VariableList, program(Id, NewBlock)) :-
-  unique_variables(Block, VariableList, NewBlock, 1).
+  unique_variables(Block, VariableList, NewBlock, 1, _).
 
 
-unique_variables(declarations([]), _, [], declarations([]), F, F) :-!.
-unique_variables(declarations([H|T]), ValueList, NewValueList, declarations([NH | NT]), Free, Taken1):-
+unique_variables(declarations([]), A, A, F, F, declarations([])) :-!.
+unique_variables(declarations([H|T]), ValueList, NewValueList, Free, Taken1, declarations([NH | NT])):-
   % FIXME
   unique_variables(H, ValueList, NewVL, Free, Taken, NH),
   % FIXME
-  unique_variables(declarations(T), NewVL, NVL, Taken, Taken1, declarations(NT)),
+  unique_variables(declarations(T), NewVL, NewValueList, Taken, Taken1, declarations(NT)).
   % FIXME
-  append(NewVL, NVL, NewValueList).
+  %append(NewVL, NVL, NewValueList).
 
 % FIXME
 unique_variables(local([]), ValList, ValList, F, F, local([])):-!.
@@ -1104,10 +1107,13 @@ unique_variables(procedure(Id, FA, B), ValList, ValList, Free, Taken1, procedure
 
 % FIXME?
 unique_variables(block(Dec, CI), VariableList, block(NewDec, NewCI), Free, Taken) :-
-  unique_variables(Dec, VariableList, NewValList, NewDec, Free, Taken),
+  unique_variables(Dec, VariableList, NewValList, Free, Taken, NewDec),
   unique_variables(CI, NewValList, NewCI).
 
-handleFA([], NV, NV, F, F, []):-!.
-handleFA([H|T], NV, NV1, F, T, [uvar(F) | NT]) :-
+handleFA([], NV, NV, F, F, []).
+handleFA([value(H)|T], NV, NV1, F, Tk, [value(uvar(F)) | NT]) :-
   F1 is F+1,
-  handleFA(T, [(H, uvar(F)) | NV], NV1, F1, T, NT).
+  handleFA(T, [(H, uvar(F)) | NV], NV1, F1, Tk, NT).
+handleFA([name(H)|T], NV, NV1, F, Tk, [name(uvar(F)) | NT]) :-
+  F1 is F+1,
+  handleFA(T, [(H, uvar(F)) | NV], NV1, F1, Tk, NT).
