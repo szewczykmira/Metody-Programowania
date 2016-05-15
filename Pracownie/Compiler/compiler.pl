@@ -1,5 +1,6 @@
 % vim: syntax=prolog
-% Variables called only by value
+% Miroslawa Szewczyk, 241752
+% Nie zostalo zaimplementowane zagniezdzanie procedur oraz przekazywanie parametrow do procedur przez nazwe
 
 % white spaces
 smt --> [_], smt.
@@ -509,8 +510,7 @@ compile(variable(Var), Commands) :-
   Commands = [const, funcstack, swapa, load,
   swapd, const, P1, swapd, sub, swapa, load].
 
-compile(variable(Var), [const, Var, swapa, load]) :-
-  write(variable(Var)), write(" outside func."), nl.
+compile(variable(Var), [const, Var, swapa, load]).
 
 compile(-(Arg), Commands) :-
   compile(Arg, C1),
@@ -1121,6 +1121,12 @@ rewrite([uvar(X) | T], [R | RewriteT], N, List) :-
 rewrite([uvar(X) | T], [N | RewriteT], N, List) :-
   N1 is N+1,
   rewrite(T, RewriteT, N1, [(uvar(X), N) | List]).
+rewrite([rv | T], [R | RewriteT], N, List) :-
+  member((rv, R), List),!,
+  rewrite(T, RewriteT, N, List).
+rewrite([rv | T], [N | RewriteT], N, List) :-
+  N1 is N+1,
+  rewrite(T, RewriteT, N1, [(rv, N) | List]).
 rewrite([evalstack | T], [R | RewriteT], N, List) :-
   member((evalstack, R), List),!,
   rewrite(T, RewriteT, N, List).
@@ -1136,7 +1142,62 @@ rewrite([funcstack | T], [N | RewriteT], N, List) :-
 rewrite([H|T],[H|RT], N, List) :-
   rewrite(T, RT, N, List).
 
+to_binary([], []):-!.
+to_binary([nop | T], [0 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([syscall | T], [1 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([load | T], [2 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([store | T], [3 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([swapa | T], [4 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([swapd | T], [5 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([branchz | T], [6 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([branchn | T], [7 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([jump | T], [8 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([const | T], [9 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([add | T], [10 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([sub | T], [11 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([mul | T], [12 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([div | T], [13 | BT]) :-
+  !,to_binary(T, BT).
+
+to_binary([Num | T], [Num | BT]) :-
+  number(Num),
+  Num >= 0,!,
+  to_binary(T, BT).
+
+to_binary([Num | T], [RNum | BT]) :-
+  number(Num),
+  Num < 0, !,
+  RNum is 65535 + Num,
+  to_binary(T, BT).
+
 % main program
 algol16(Source, Sextium) :-
   phrase(program(AST), Source),
-  program(AST, Sextium).
+  program(AST, ASM),
+  to_binary(ASM, Sextium).
