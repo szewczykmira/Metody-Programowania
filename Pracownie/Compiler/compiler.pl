@@ -1003,3 +1003,111 @@ pretty_print_asm([next(Q) | T], N) :- !,
 pretty_print_asm([H|T], N) :-
   pretty_print_num(N), N1 is N+1,
   indent(2), write(H), nl, pretty_print_asm(T, N1).
+
+
+% Change variable names for unique ones
+unique_variables(AST, NewAST) :-
+  unique_variables(AST, [], NewAST).
+
+unique_variables(p_call(Id, Ra), VariableList, p_call(Id, NRa)) :-
+  unique_variables(Ra, VariableList, NRa).
+
+unique_variables(number(Arg), _, number(Arg)).
+
+unique_variables(variable(Var), VariableList, variable(NVar)) :-
+  member((Var, NVar), VariableList).
+
+unique_variables(-(Arg), VariableList, -(NArg)) :-
+  unique_variables(Arg, VariableList, NArg).
+
+unique_variables(+(Arg), VariableList, NArg) :-
+  unique_variables(Arg, VariableList, NArg).
+
+unique_variables(op(X, Var1, Var2), VariableList, op(X, NVar1, NVar2)) :-
+  unique_variables(Var1, VariableList, NVar1),
+  unique_variables(Var2, VariableList, NVar2).
+
+unique_variables(not(Arg), VariableList, not(NArg)) :-
+  unique_variables(Arg, VariableList, NArg).
+
+unique_variables(or([]), _, or([])) :-!.
+unique_variables(or([H|T]), VariableList, or([NH | NT])) :-
+  unique_variables(H, VariableList, NH),!,
+  unique_variables(or(T), VariableList, or(NT)).
+
+unique_variables(and([]), _, and([])) :-!.
+unique_variables(and([H|T]), VariableList, and([NH | NT])) :-
+  unique_variables(H, VariableList, NH),!,
+  unique_variables(and(T), VariableList, and(NT)).
+
+unique_variables(iwrite(Arg), VariableList, iwrite(NewArg)) :-
+  unique_variables(Arg, VariableList, NewArg).
+
+unique_variables(iread(Arg), VariableList, iread(NewArg)) :-
+  unique_variables(Arg, VariableList, NewArg).
+
+unique_variables(ireturn(Arg), VariableList, ireturn(NewArg)) :-
+  unique_variables(Arg, VariableList, NewArg).
+
+unique_variables(icall(Arg), VariableList, icall(NewArg)) :-
+  unique_variables(Arg, VariableList, NewArg).
+
+unique_variables(while(Logic, Compound), VariableList, while(NLogic, NComp)) :-
+  unique_variables(Logic, VariableList, NLogic),
+  unique_variables(Compound, VariableList, NComp).
+
+unique_variables(ifelse(Logic,Then,Else), VariableList, ifelse(NLogic, NThen, NElse)) :-
+  unique_variables(Logic, VariableList, NLogic),
+  unique_variables(Then, VariableList, NThen),
+  unique_variables(Else, VariableList, NElse).
+
+unique_variables(if(Logic,Then), VariableList, if(NLogic, NThen)) :-
+  unique_variables(Logic, VariableList, NLogic),
+  unique_variables(Then, VariableList, NThen).
+
+%FIXME
+unique_variables(assign(Var, Val), VariableList, assign(NVar, NVal)) :-
+  unique_variables(Val, VariableList, NVal),
+  member((Var, NVar), VariableList).
+
+unique_variables([], _, []):-!.
+
+unique_variables([H|T], VariableList, [NH | NT]) :-
+  unique_variables(H, VariableList, NH),
+  unique_variables(T, VariableList, NT).
+
+unique_variables(program(Id, Block), VariableList, program(Id, NewBlock)) :-
+  unique_variables(Block, VariableList, NewBlock, 1).
+
+
+unique_variables(declarations([]), _, [], declarations([]), F, F) :-!.
+unique_variables(declarations([H|T]), ValueList, NewValueList, declarations([NH | NT]), Free, Taken1):-
+  % FIXME
+  unique_variables(H, ValueList, NewVL, Free, Taken, NH),
+  % FIXME
+  unique_variables(declarations(T), NewVL, NVL, Taken, Taken1, declarations(NT)),
+  % FIXME
+  append(NewVL, NVL, NewValueList).
+
+% FIXME
+unique_variables(local([]), ValList, ValList, F, F, local([])):-!.
+% FIXME
+unique_variables(local([H|T]), ValueList, NVal,Free, Taken, local([uvar(Free) | NT])):-
+  F1 is Free + 1,
+% FIXME
+  unique_variables(local(T), [(H, uvar(Free)) | ValueList], NVal, F1, Taken, local(NT)).
+
+unique_variables(procedure(Id, FA, B), ValList, ValList, Free, Taken1, procedure(Id, NFA, NB)):-
+  handleFA(FA, ValList, Nv, Free, Taken, NFA),
+  % FIXME
+  unique_variables(B, Nv, NB, Taken, Taken1).
+
+% FIXME?
+unique_variables(block(Dec, CI), VariableList, block(NewDec, NewCI), Free, Taken) :-
+  unique_variables(Dec, VariableList, NewValList, NewDec, Free, Taken),
+  unique_variables(CI, NewValList, NewCI).
+
+handleFA([], NV, NV, F, F, []):-!.
+handleFA([H|T], NV, NV1, F, T, [uvar(F) | NT]) :-
+  F1 is F+1,
+  handleFA(T, [(H, uvar(F)) | NV], NV1, F1, T, NT).
