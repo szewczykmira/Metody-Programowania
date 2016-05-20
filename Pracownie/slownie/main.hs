@@ -1,4 +1,4 @@
-module Slownie (Rodzaj(..), Waluta(..), slownie, generate_three) where
+module Slownie (Rodzaj(..), Waluta(..), slownie, partial) where
 data Rodzaj = Meski | Zenski | Nijaki deriving Show
 
 data Waluta = Waluta {
@@ -47,7 +47,7 @@ enty 9 = "dziewiecdziesiat"
 
 decimal :: Integer -> String
 decimal number
-  | number == 0 = ""
+  | number == 0 = "zero"
   | number < 10 = ones number
   | number == 10 = "dziesiec"
   | number < 20 && number > 10 = teen number
@@ -68,3 +68,9 @@ hundreds 9 = "dziewiecset"
 generate_three number = 
   let hund = number `div` 100 
   in hundreds hund ++ " " ++ decimal (number `mod` 100)
+
+partial 0 = []
+partial number =
+  let mods = number `mod` 1000
+  in let divs = number `div` 1000
+  in reverse (mods : (partial divs))
