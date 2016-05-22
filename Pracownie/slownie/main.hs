@@ -1,4 +1,4 @@
-module Slownie (Rodzaj(..), Waluta(..), verbally, parse_value) where
+module Slownie (Rodzaj(..), Waluta(..), make_latin) where
 data Rodzaj = Meski | Zenski | Nijaki deriving Show
 
 data Waluta = Waluta {
@@ -94,6 +94,26 @@ latin_ones 7 = "septen"
 latin_ones 8 = "octo"
 latin_ones 9 = "novem"
 
+latin_tens 1 = "deci"
+latin_tens 2 = "viginti"
+latin_tens 3 = "triginti"
+latin_tens 4 = "quadraginti"
+latin_tens 5 = "quinquaginti"
+latin_tens 6 = "sexaginti"
+latin_tens 7 = "septuaginti"
+latin_tens 8 = "octoginti"
+latin_tens 9 = "nonaginti"
+
+latin_hundreds 1 = "centil"
+latin_hundreds 2 = "duocentil"
+latin_hundreds 3 = "trecntil"
+latin_hundreds 4 = "quadringentil"
+latin_hundreds 5 = "quingentil"
+latin_hundreds 6 = "sescentil"
+latin_hundreds 7 = "septingentil"
+latin_hundreds 8 = "octingentil"
+latin_hundreds 9 = "nongentil"
+
 latin 1 = "mi"
 latin 2 = "bi"
 latin 3 = "tril"
@@ -103,3 +123,13 @@ latin 6 = "sextil"
 latin 7 = "septil"
 latin 8 = "octil"
 latin 9 = "nonil"
+
+make_latin x 
+  | x < 10 = latin x
+  | otherwise = longlatin x
+
+longlatin number
+  | number < 10 = latin_ones number
+  | number < 100 = longlatin (number `mod` 10) ++ latin_tens (number `div` 10)
+  | number < 1000 = longlatin (number `mod` 100) ++ latin_hundreds (number `div` 100)
+  | otherwise = longlatin (number `mod` 1000) ++ "millinil"
