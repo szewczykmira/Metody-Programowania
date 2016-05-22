@@ -1,4 +1,4 @@
-module Slownie (Rodzaj(..), Waluta(..), slownie, partial) where
+module Slownie (Rodzaj(..), Waluta(..), verbally, parse_value) where
 data Rodzaj = Meski | Zenski | Nijaki deriving Show
 
 data Waluta = Waluta {
@@ -74,3 +74,32 @@ partial number =
   let mods = number `mod` 1000
   in let divs = number `div` 1000
   in reverse (mods : (partial divs))
+ 
+verbally = map generate_three . partial
+
+parse_value a = acc 0 a where
+acc n a@(x:xs) 
+  | xs == [] = (n,x) : []
+  | otherwise = let n1 = n+3 in (n, x) : acc n1 xs
+
+-- define numbers in latin
+latin_ones 0 = ""
+latin_ones 1 = "un"
+latin_ones 2 = "duo"
+latin_ones 3 = "tres"
+latin_ones 4 = "quattuor"
+latin_ones 5 = "quin"
+latin_ones 6 = "sex"
+latin_ones 7 = "septen"
+latin_ones 8 = "octo"
+latin_ones 9 = "novem"
+
+latin 1 = "mi"
+latin 2 = "bi"
+latin 3 = "tril"
+latin 4 = "quadril"
+latin 5 = "quintil"
+latin 6 = "sextil"
+latin 7 = "septil"
+latin 8 = "octil"
+latin 9 = "nonil"
