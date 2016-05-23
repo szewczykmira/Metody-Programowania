@@ -1,4 +1,4 @@
-module Slownie (Rodzaj(..), Waluta(..), make_latin) where
+module Slownie (Rodzaj(..), Waluta(..), verbally, partial, parse_value) where
 data Rodzaj = Meski | Zenski | Nijaki deriving Show
 
 data Waluta = Waluta {
@@ -10,7 +10,6 @@ data Waluta = Waluta {
 
 slownie :: Waluta -> Integer -> String
 slownie _ wal = generate_three wal
---slownie waluta@(Waluta _ _ _ Zenski) wartosc = zenski waluta wartosc
 
 ones :: Integer -> String
 ones 1 = "jeden"
@@ -69,15 +68,20 @@ generate_three number =
   let hund = number `div` 100 
   in hundreds hund ++ " " ++ decimal (number `mod` 100)
 
-partial 0 = []
-partial number =
-  let mods = number `mod` 1000
-  in let divs = number `div` 1000
-  in reverse (mods : (partial divs))
- 
-verbally = map generate_three . partial
+partial number = 
+  reverse (acc number) where
+  acc n 
+    | n == 0 = []
+    | otherwise = let mods = n `mod` 1000 
+                  in let divs = n `div` 1000 in
+                  mods : acc divs
+--verbally = map generate_three . partial
+verbally = map makename . parse_value . partial
 
-parse_value a = acc 0 a where
+makename (num, val) = 
+  generate_three val ++ " " ++ make_nbr num
+
+parse_value a = reverse (acc 0 (reverse a)) where
 acc n a@(x:xs) 
   | xs == [] = (n,x) : []
   | otherwise = let n1 = n+3 in (n, x) : acc n1 xs
@@ -133,3 +137,9 @@ longlatin number
   | number < 100 = longlatin (number `mod` 10) ++ latin_tens (number `div` 10)
   | number < 1000 = longlatin (number `mod` 100) ++ latin_hundreds (number `div` 100)
   | otherwise = longlatin (number `mod` 1000) ++ "millinil"
+
+make_nbr 0 = ""
+make_nbr 3 = "tysiac"
+make_nbr number = 
+  let div6 = number `div` 6 in
+  make_latin div6 ++ "lion"
