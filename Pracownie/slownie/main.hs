@@ -1,4 +1,4 @@
-module Slownie (Rodzaj(..), Waluta(..), makename) where
+module Slownie (Rodzaj(..), Waluta(..), verbally) where
 data Rodzaj = Meski | Zenski | Nijaki deriving Show
 
 data Waluta = Waluta {
@@ -141,20 +141,35 @@ longlatin number
   | number < 1000 = longlatin (number `mod` 100) ++ latin_hundreds (number `div` 100)
 
 reform_thousand number = 
-  let ten = number `mod` 10 in
-  acc ten number where
-  acc t num
+  let dec = number `mod` 10 in
+  let tens = number `mod` 100 in
+  acc tens dec number where
+  acc tens dec num
     | num == 0 = "" 
     | num == 1 = "tysiac"
-    | num > 1 && t == 1 = "tysiecy"
-    | t < 5 && t > 0= "tysiace"
+    | tens > 10 && tens < 20 = "tysiecy"
+    | dec > 1 && dec < 5 = "tysiace"
     | otherwise = "tysiecy"
 
-reform_milions 0 = "lion"
-reform_milions 3 = "liard"
+reform_milions mod number = 
+  acc mod ++ ext number where 
+  acc num 
+    | num == 0 = "lion"
+    | otherwise = "liard"
+
+ext number = 
+  let dec = number `mod` 10 in
+  let tens = number `mod` 100 in
+  acc tens dec number where
+  acc tens dec num
+    | num == 0 = "" 
+    | num == 1 = ""
+    | tens > 10 && tens < 20 = "ow"
+    | dec > 1 && dec < 5 = "y"
+    | otherwise = "ow"
 
 make_nbr _ 0 = ""
 make_nbr a 3 = reform_thousand a
-make_nbr _ number = 
+make_nbr a number = 
   let div6 = number `div` 6 in
-  make_latin div6 ++ reform_milions (number `mod` 6)
+  make_latin div6 ++ reform_milions (number `mod` 6) a
