@@ -1,4 +1,4 @@
-module Slownie (Rodzaj(..), Waluta(..), verbally, partial, parse_value) where
+module Slownie (Rodzaj(..), Waluta(..), makename) where
 data Rodzaj = Meski | Zenski | Nijaki deriving Show
 
 data Waluta = Waluta {
@@ -12,6 +12,7 @@ slownie :: Waluta -> Integer -> String
 slownie _ wal = generate_three wal
 
 ones :: Integer -> String
+ones 0 = ""
 ones 1 = "jeden"
 ones 2 = "dwa"
 ones 3 = "trzy"
@@ -46,7 +47,7 @@ enty 9 = "dziewiecdziesiat"
 
 decimal :: Integer -> String
 decimal number
-  | number == 0 = "zero"
+  | number == 0 = ""
   | number < 10 = ones number
   | number == 10 = "dziesiec"
   | number < 20 && number > 10 = teen number
@@ -64,6 +65,7 @@ hundreds 7 = "siedemset"
 hundreds 8 = "osiemset"
 hundreds 9 = "dziewiecset"
 
+generate_three 0 = ""
 generate_three number = 
   let hund = number `div` 100 
   in hundreds hund ++ " " ++ decimal (number `mod` 100)
@@ -75,11 +77,12 @@ partial number =
     | otherwise = let mods = n `mod` 1000 
                   in let divs = n `div` 1000 in
                   mods : acc divs
---verbally = map generate_three . partial
+
 verbally = map makename . parse_value . partial
 
-makename (num, val) = 
-  generate_three val ++ " " ++ make_nbr num
+makename (num, val) 
+  | length (generate_three val) == 0 = ""
+  | otherwise = generate_three val ++ " " ++ make_nbr val num
 
 parse_value a = reverse (acc 0 (reverse a)) where
 acc n a@(x:xs) 
@@ -136,10 +139,22 @@ longlatin number
   | number < 10 = latin_ones number
   | number < 100 = longlatin (number `mod` 10) ++ latin_tens (number `div` 10)
   | number < 1000 = longlatin (number `mod` 100) ++ latin_hundreds (number `div` 100)
-  | otherwise = longlatin (number `mod` 1000) ++ "millinil"
 
-make_nbr 0 = ""
-make_nbr 3 = "tysiac"
-make_nbr number = 
+reform_thousand number = 
+  let ten = number `mod` 10 in
+  acc ten number where
+  acc t num
+    | num == 0 = "" 
+    | num == 1 = "tysiac"
+    | num > 1 && t == 1 = "tysiecy"
+    | t < 5 && t > 0= "tysiace"
+    | otherwise = "tysiecy"
+
+reform_milions 0 = "lion"
+reform_milions 3 = "liard"
+
+make_nbr _ 0 = ""
+make_nbr a 3 = reform_thousand a
+make_nbr _ number = 
   let div6 = number `div` 6 in
-  make_latin div6 ++ "lion"
+  make_latin div6 ++ reform_milions (number `mod` 6)
