@@ -9,7 +9,13 @@ data Waluta = Waluta {
   } deriving Show
 
 slownie :: Waluta -> Integer -> String
-slownie _ wal = generate_three wal
+slownie _ _ = "1"
+
+--verbally = map makename . parse_value . partial
+verbally number =
+  let parsed = parse_value (partial number) in
+  let l = length parsed in
+  map makename (take (l-1) parsed)
 
 ones :: Integer -> String
 ones 0 = ""
@@ -77,8 +83,6 @@ partial number =
     | otherwise = let mods = n `mod` 1000 
                   in let divs = n `div` 1000 in
                   mods : acc divs
-
-verbally = map makename . parse_value . partial
 
 makename (num, val) 
   | length (generate_three val) == 0 = ""
