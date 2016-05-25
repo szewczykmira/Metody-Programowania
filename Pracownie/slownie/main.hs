@@ -1,4 +1,4 @@
-module Slownie (Rodzaj(..), Waluta(..), verbally) where
+module Slownie (Rodzaj(..), Waluta(..), verbally, currency) where
 data Rodzaj = Meski | Zenski | Nijaki deriving Show
 
 data Waluta = Waluta {
@@ -16,6 +16,17 @@ verbally number =
   let parsed = parse_value (partial number) in
   let l = length parsed in
   map makename (take (l-1) parsed)
+
+currency (Waluta mp mm dm Meski)  number = 
+  let dec = number `mod` 10 in
+  let tens = number `mod` 100 in
+  generate_three number ++ " " ++ acc tens dec number where
+  acc tens dec num
+    | num == 0 = mm
+    | num == 1 = mp
+    | tens > 10 && tens < 20 = dm
+    | dec > 1 && dec < 5 = mm
+    | otherwise = dm
 
 ones :: Integer -> String
 ones 0 = ""
