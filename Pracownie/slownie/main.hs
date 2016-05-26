@@ -9,15 +9,21 @@ data Waluta = Waluta {
   } deriving Show
 
 slownie :: Waluta -> Integer -> String
-slownie _ _ = "1"
+slownie (Waluta _ mm _ _) 0 = "zero " ++ mm
 
---verbally = map makename . parse_value . partial
-verbally number =
+--verbally wal number =
+--  let parsed = parse_value (partial number) in
+--  let l = length parsed in
+--  map makename (take (l-1) parsed) ++ currency wal (drop (l-1) parsed) : []
+
+verbally cur number =
   let parsed = parse_value (partial number) in
   let l = length parsed in
-  map makename (take (l-1) parsed)
+  let [(_,n)] = drop (l-1) parsed in
+  let taken = take (l-1) parsed in
+  map makename taken ++ currency cur n : []
 
-currency (Waluta mp mm dm Meski)  number = 
+currency (Waluta mp mm dm Meski) number = 
   let dec = number `mod` 10 in
   let tens = number `mod` 100 in
   generate_three number ++ " " ++ acc tens dec number where
@@ -27,6 +33,30 @@ currency (Waluta mp mm dm Meski)  number =
     | tens > 10 && tens < 20 = dm
     | dec > 1 && dec < 5 = mm
     | otherwise = dm
+
+currency (Waluta mp mm dm Nijaki) number = 
+  let dec = number `mod` 10 in
+  let tens = number `mod` 100 in
+  let gtn = generate_three number ++ " " in
+  acc tens dec number gtn where
+  acc tens dec num gtn
+    | num == 0 = gtn ++ mm
+    | num == 1 = "jedno " ++ mp
+    | tens > 10 && tens < 20 = gtn ++ dm
+    | dec > 1 && dec < 5 = gtn ++ mm
+    | otherwise = gtn ++ dm
+
+currency (Waluta mp mm dm Zenski) number = 
+  let dec = number `mod` 10 in
+  let tens = number `mod` 100 in
+  let gtn = generate_three number ++ " " in
+  acc tens dec number gtn where
+  acc tens dec num gtn
+    | num == 0 = gtn ++ mm
+    | num == 1 = "jedna " ++ mp
+    | tens > 10 && tens < 20 = gtn ++ dm
+    | dec > 1 && dec < 5 = gtn ++ mm
+    | otherwise = gtn ++ dm
 
 ones :: Integer -> String
 ones 0 = ""
