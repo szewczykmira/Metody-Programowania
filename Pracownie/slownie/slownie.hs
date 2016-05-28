@@ -1,4 +1,4 @@
-module Slownie (Rodzaj(..), Waluta(..), verbally, currency) where
+module Slownie (Rodzaj(..), Waluta(..), slownie) where
 data Rodzaj = Meski | Zenski | Nijaki deriving Show
 
 data Waluta = Waluta {
@@ -9,12 +9,8 @@ data Waluta = Waluta {
   } deriving Show
 
 slownie :: Waluta -> Integer -> String
-slownie (Waluta _ mm _ _) 0 = "zero " ++ mm
-
---verbally wal number =
---  let parsed = parse_value (partial number) in
---  let l = length parsed in
---  map makename (take (l-1) parsed) ++ currency wal (drop (l-1) parsed) : []
+slownie (Waluta _ _ dm _) 0 = "zero " ++ dm
+slownie curr number = foldl (++) "" (verbally curr number)
 
 verbally cur number =
   let parsed = parse_value (partial number) in
@@ -191,10 +187,10 @@ reform_thousand number =
   acc tens dec number where
   acc tens dec num
     | num == 0 = "" 
-    | num == 1 = "tysiac"
-    | tens > 10 && tens < 20 = "tysiecy"
-    | dec > 1 && dec < 5 = "tysiace"
-    | otherwise = "tysiecy"
+    | num == 1 = "tysiac "
+    | tens > 10 && tens < 20 = "tysiecy "
+    | dec > 1 && dec < 5 = "tysiace "
+    | otherwise = "tysiecy "
 
 reform_milions mod number = 
   acc mod ++ ext number where 
@@ -207,11 +203,11 @@ ext number =
   let tens = number `mod` 100 in
   acc tens dec number where
   acc tens dec num
-    | num == 0 = "" 
-    | num == 1 = ""
-    | tens > 10 && tens < 20 = "ow"
-    | dec > 1 && dec < 5 = "y"
-    | otherwise = "ow"
+    | num == 0 = " " 
+    | num == 1 = " "
+    | tens > 10 && tens < 20 = "ow "
+    | dec > 1 && dec < 5 = "y "
+    | otherwise = "ow "
 
 make_nbr _ 0 = ""
 make_nbr a 3 = reform_thousand a
