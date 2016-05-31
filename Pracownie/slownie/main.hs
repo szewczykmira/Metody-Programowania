@@ -11,7 +11,7 @@ import Slownie
 defi "AUD" = (Waluta "dolar australijski" "dolary australijskie" "dolarow austalijskich" Meski)
 
 -- BGN : lew bułgarski
-defi "BGN" = (Waluta "lew bulgarski" "lwy bulgarskie" "lwow bulgarskich" "lwow bulgarskich" Meski)
+defi "BGN" = (Waluta "lew bulgarski" "lwy bulgarskie" "lwow bulgarskich" Meski)
 
 -- BRL : real brazylijski
 defi "BRL" = (Waluta "real brazylijski" "reale brazylijskie" "reali brazylijskich" Meski)
@@ -98,10 +98,14 @@ defi "THB" = (Waluta "bat" "baty" "batow" Meski)
 defi "TRY" = (Waluta "lira turecka" "liry tureckie" "lir tureckich" Zenski)
 
 -- UAH : hrywna ukraińska
-defi UAH = (Waluta "hrywna ukrainska" "hrywny ukrainskie" "hrywien ukrainskich" Zenski)
+defi "UAH" = (Waluta "hrywna ukrainska" "hrywny ukrainskie" "hrywien ukrainskich" Zenski)
 
 -- USD : dolar amerykański
 defi "USD" = (Waluta "dolar amerykanski" "dolary amerykanskie" "dolarow amerykanskich" Meski)
 
 -- ZAR : rand
 defi "ZAR" = (Waluta "rand" "randy" "rand" Meski)
+
+
+-- main function
+slownie number currency = Slownie.slownie (defi currency) number
