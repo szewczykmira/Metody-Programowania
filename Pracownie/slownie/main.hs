@@ -54,21 +54,54 @@ defi "IDR" = (Waluta "rupia" "rupie" "rupii" Zenski)
 
 -- ISK : korona
 defi "ISK" = (Waluta "korona" "korony" "koron" Zenski)
+
 -- JPY : jen japonski
+defi "JPY" = (Waluta "jen japonski" "jeny japonskie" "jenow japonskich" Meski)
+
 -- KRW : won
+defi "KRW" = (Waluta "won" "wony" "wonow" Meski)
+
 -- MXN : peso
+defi "MXN" = (Waluta "peso" "peso" "peso" Nijaki)
+
 -- MYR : ringgit
+defi "MYR" = (Waluta "ringgit" "ringgity" "ringgitow" Meski)
+
 -- NOK : korona norweska
+defi "NOK" = (Waluta "korona norweska" "korony norweskie" "koron norweskich" Zenski)
+
 -- NZD : dolar
+defi "NZD" = (Waluta "dolar" "dolary" "dolarow" Meski)
+
 -- PHP : peso
+defi "PHO" = (Waluta "peso" "peso" "peso" Nijaki)
+
 -- PLN : zloty
+defi "PLN" = (Waluta "zloty" "zlote" "zlotych" Meski)
+
 -- RON : lej rumunski
+defi "RON" = (Waluta "lej rumunski" "leje rumunskie" "leji rumunskich" Meski)
+
 -- RUB : rubel rosyjski
--- SDR : sdr
+defi "RUB" = (Waluta "rubel rosyjski" "ruble rosyjskie" "rubli rosyjskich" Meski)
+
 -- SEK : korona szwedzka
+defi "SEK" = (Waluta "korona szwecka" "korony szweckie" "koron szweckich" Zenski)
+
 -- SGD : dolar
+defi "SGD" = (Waluta "dolar" "dolary" "dolarow" Meski)
+
 -- THB : bat
+defi "THB" = (Waluta "bat" "baty" "batow" Meski)
+
 -- TRY : lira turecka
+defi "TRY" = (Waluta "lira turecka" "liry tureckie" "lir tureckich" Zenski)
+
 -- UAH : hrywna ukraińska
+defi UAH = (Waluta "hrywna ukrainska" "hrywny ukrainskie" "hrywien ukrainskich" Zenski)
+
 -- USD : dolar amerykański
+defi "USD" = (Waluta "dolar amerykanski" "dolary amerykanskie" "dolarow amerykanskich" Meski)
+
 -- ZAR : rand
+defi "ZAR" = (Waluta "rand" "randy" "rand" Meski)
