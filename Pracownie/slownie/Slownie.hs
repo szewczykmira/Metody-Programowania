@@ -76,7 +76,7 @@ currency (Waluta mp mm dm Zenski) number =
   acc tens dec num gtn
     | num == 0 = gtn ++ mm
     | num == 1 = "jedna " ++ mp
-    | dec == 2 = (generate_three (number-2)) ++ "dwie " ++ mm
+    | dec == 2 && num > 20= (generate_three (number-2)) ++ "dwie " ++ mm
     | tens > 10 && tens < 20 = gtn ++ dm
     | dec > 2 && dec < 5 = gtn ++ mm
     | otherwise = gtn ++ dm

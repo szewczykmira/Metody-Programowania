@@ -1,7 +1,9 @@
+module Main where
 import Slownie
+import System.Environment
 
 -- data Waluta = Waluta {
---  mianownik_poj :: String, 
+--  mianownik_poj :: String,
 --  mianownik_mn :: String,
 --  dopelniacz_mn :: String,
 --  rodzaj :: Rodzaj
@@ -106,6 +108,10 @@ defi "USD" = (Waluta "dolar amerykanski" "dolary amerykanskie" "dolarow amerykan
 -- ZAR : rand
 defi "ZAR" = (Waluta "rand" "randy" "rand" Meski)
 
+getInt str = read str ::Integer
+second lst = head (tail lst)
 
 -- main function
-slownie number currency = Slownie.slownie (defi currency) number
+main = do
+  args <- getArgs
+  putStrLn $ Slownie.slownie (defi (second args)) (getInt (head args))
