@@ -1,4 +1,28 @@
 module Slownie (Rodzaj(..), Waluta(..), slownie) where
+
+slownie :: Waluta -> Integer -> String
+verbally :: Waluta -> Integer -> [String]
+currency :: Waluta -> Integer -> String
+ones :: Integer -> String
+teen :: Integer -> String
+enty :: Integer -> String
+decimal :: Integer -> String
+hundreds :: Integer -> String
+generate_three :: Integer -> String
+partial :: Integer -> [Integer]
+makename :: (Integer, Integer) -> String
+parse_value :: [Integer] -> [(Integer, Integer)]
+latin_ones :: Integer -> String
+latin_tens :: Integer -> String
+latin_hundreds :: Integer -> String
+latin :: Integer -> String
+make_latin :: Integer -> String
+longlatin :: Integer -> String
+reform_thousand :: Integer -> String
+reform_milions :: Integer -> Integer -> String
+ext :: Integer -> String
+make_nbr :: Integer -> Integer -> String
+
 data Rodzaj = Meski | Zenski | Nijaki deriving Show
 
 data Waluta = Waluta {
@@ -8,9 +32,11 @@ data Waluta = Waluta {
   rodzaj :: Rodzaj
   } deriving Show
 
-slownie :: Waluta -> Integer -> String
 slownie (Waluta _ _ dm _) 0 = "zero " ++ dm
-slownie curr number = foldl (++) "" (verbally curr number)
+slownie curr number 
+  | number < 0 = "minus " ++ slownie curr (number*(-1))
+  | number >= (10^60) = "mnostwo"
+  | otherwise = foldl (++) "" (verbally curr number)
 
 verbally cur number =
   let parsed = parse_value (partial number) in
@@ -50,11 +76,11 @@ currency (Waluta mp mm dm Zenski) number =
   acc tens dec num gtn
     | num == 0 = gtn ++ mm
     | num == 1 = "jedna " ++ mp
+    | dec == 2 = (generate_three (number-2)) ++ "dwie " ++ mm
     | tens > 10 && tens < 20 = gtn ++ dm
-    | dec > 1 && dec < 5 = gtn ++ mm
+    | dec > 2 && dec < 5 = gtn ++ mm
     | otherwise = gtn ++ dm
 
-ones :: Integer -> String
 ones 0 = ""
 ones 1 = "jeden"
 ones 2 = "dwa"
@@ -66,7 +92,6 @@ ones 7 = "siedem"
 ones 8 = "osiem"
 ones 9 = "dziewiec"
 
-teen :: Integer -> String
 teen 11 = "jedenascie"
 teen 12 = "dwanascie"
 teen 13 = "trzynascie"
@@ -77,7 +102,6 @@ teen 17 = "siedemnascie"
 teen 18 = "osiemnascie"
 teen 19 = "dziewietnascie"
 
-enty :: Integer -> String
 enty 0 = ""
 enty 2 = "dwadziescia"
 enty 3 = "trzydziesci"
@@ -88,7 +112,6 @@ enty 7 = "siedemdziesiat"
 enty 8 = "osiemdziesiat"
 enty 9 = "dziewiecdziesiat"
 
-decimal :: Integer -> String
 decimal number
   | number == 0 = ""
   | number < 10 = ones number
@@ -96,7 +119,6 @@ decimal number
   | number < 20 && number > 10 = teen number
   | otherwise = enty (number `div` 10) ++ " " ++ ones (number `mod` 10) 
 
-hundreds :: Integer -> String
 hundreds 0 = ""
 hundreds 1 = "sto"
 hundreds 2 = "dwiescie"
