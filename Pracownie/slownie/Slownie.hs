@@ -35,7 +35,7 @@ data Waluta = Waluta {
 slownie (Waluta _ _ dm _) 0 = "zero " ++ dm
 slownie curr number 
   | number < 0 = "minus " ++ slownie curr (number*(-1))
-  | number >= (10^60) = "mnostwo"
+  | number >= (10^6000) = "mnostwo"
   | otherwise = foldl (++) "" (verbally curr number)
 
 verbally cur number =
@@ -50,7 +50,7 @@ currency (Waluta mp mm dm Meski) number =
   let tens = number `mod` 100 in
   generate_three number ++ " " ++ acc tens dec number where
   acc tens dec num
-    | num == 0 = mm
+    | num == 0 = dm
     | num == 1 = mp
     | tens > 10 && tens < 20 = dm
     | dec > 1 && dec < 5 = mm
@@ -62,7 +62,7 @@ currency (Waluta mp mm dm Nijaki) number =
   let gtn = generate_three number ++ " " in
   acc tens dec number gtn where
   acc tens dec num gtn
-    | num == 0 = gtn ++ mm
+    | num == 0 = gtn ++ dm
     | num == 1 = "jedno " ++ mp
     | tens > 10 && tens < 20 = gtn ++ dm
     | dec > 1 && dec < 5 = gtn ++ mm
@@ -74,9 +74,10 @@ currency (Waluta mp mm dm Zenski) number =
   let gtn = generate_three number ++ " " in
   acc tens dec number gtn where
   acc tens dec num gtn
-    | num == 0 = gtn ++ mm
+    | num == 0 = gtn ++ dm
     | num == 1 = "jedna " ++ mp
-    | dec == 2 && num > 20= (generate_three (number-2)) ++ "dwie " ++ mm
+    | num == 2 = "dwie " ++ mm
+    | dec == 2 && tens > 20= (generate_three (number-2)) ++ "dwie " ++ mm
     | tens > 10 && tens < 20 = gtn ++ dm
     | dec > 2 && dec < 5 = gtn ++ mm
     | otherwise = gtn ++ dm
