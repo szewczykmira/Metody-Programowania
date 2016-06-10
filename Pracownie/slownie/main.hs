@@ -10,10 +10,10 @@ import System.Environment
 --  } deriving Show
 
 -- AUD : dolar australijski
-defi "AUD" = (Waluta "dolar australijski" "dolary australijskie" "dolarow austalijskich" Meski)
+defi "AUD" = (Waluta "dolar australijski" "dolary australijskie" "dolarow australijskich" Meski)
 
 -- BGN : lew bułgarski
-defi "BGN" = (Waluta "lew bulgarski" "lwy bulgarskie" "lwow bulgarskich" Meski)
+defi "BGN" = (Waluta "lew bulgarski" "lewy bulgarskie" "lewow bulgarskich" Meski)
 
 -- BRL : real brazylijski
 defi "BRL" = (Waluta "real brazylijski" "reale brazylijskie" "reali brazylijskich" Meski)
@@ -46,10 +46,10 @@ defi "GBP" = (Waluta "funt brytyjski" "funty brytyjskie" "funtow brytyjskich" Me
 defi "HKD" = (Waluta "dolar" "dolary" "dolarow" Meski)
 
 -- HRK : kuna chorwacka
-defi "HKR" = (Waluta "kuna chorwacka" "kuny chorwackie" "kun chorwackich" Zenski)
+defi "HRK" = (Waluta "kuna chorwacka" "kuny chorwackie" "kun chorwackich" Zenski)
 
 -- HUF : forint węgierki
-defi "HUF" = (Waluta "forint wegierski" "fortinty wegierskie" "forintow wegierskich" Meski)
+defi "HUF" = (Waluta "forint wegierski" "forinty wegierskie" "forintow wegierskich" Meski)
 
 -- IDR : rupia
 defi "IDR" = (Waluta "rupia" "rupie" "rupii" Zenski)
@@ -76,7 +76,7 @@ defi "NOK" = (Waluta "korona norweska" "korony norweskie" "koron norweskich" Zen
 defi "NZD" = (Waluta "dolar" "dolary" "dolarow" Meski)
 
 -- PHP : peso
-defi "PHO" = (Waluta "peso" "peso" "peso" Nijaki)
+defi "PHP" = (Waluta "peso" "peso" "peso" Nijaki)
 
 -- PLN : zloty
 defi "PLN" = (Waluta "zloty" "zlote" "zlotych" Meski)
@@ -88,7 +88,7 @@ defi "RON" = (Waluta "lej rumunski" "leje rumunskie" "leji rumunskich" Meski)
 defi "RUB" = (Waluta "rubel rosyjski" "ruble rosyjskie" "rubli rosyjskich" Meski)
 
 -- SEK : korona szwedzka
-defi "SEK" = (Waluta "korona szwecka" "korony szweckie" "koron szweckich" Zenski)
+defi "SEK" = (Waluta "korona szwedzka" "korony szwedzkie" "koron szwedzkich" Zenski)
 
 -- SGD : dolar
 defi "SGD" = (Waluta "dolar" "dolary" "dolarow" Meski)
